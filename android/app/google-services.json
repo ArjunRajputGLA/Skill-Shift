@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "408596836150",
+    "project_id": "skillshift-7dd6a",
+    "storage_bucket": "skillshift-7dd6a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:408596836150:android:1ce2872c3a9cc4885ccd97",
+        "android_client_info": {
+          "package_name": "com.example.skill_shift"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyApWKbiiUbbMJ_w7tJZxaxNpZzw_oP8WxI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
