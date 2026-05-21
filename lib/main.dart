@@ -3,11 +3,15 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
+import 'services/firebase_notification_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_layout.dart';
 import 'screens/profile_setup_screen.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_provider.dart';
+
+final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,6 +19,9 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
+  // Initialize Push Notifications
+  await FirebaseNotificationService().initialize();
+
   runApp(
     MultiProvider(
       providers: [
@@ -35,6 +42,8 @@ class SkillShiftApp extends StatelessWidget {
     
     return MaterialApp(
       title: 'Skill Shift',
+      scaffoldMessengerKey: rootScaffoldMessengerKey,
+      navigatorKey: rootNavigatorKey,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeProvider.themeMode,

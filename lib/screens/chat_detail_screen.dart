@@ -18,6 +18,7 @@ import '../models/message_model.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/date_group_header.dart';
 import '../widgets/message_action_sheet.dart';
+import '../services/firebase_notification_service.dart';
 
 class ChatDetailScreen extends StatefulWidget {
   final String chatId;
@@ -108,6 +109,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         'lastMessage': lastMessage,
         'lastUpdated': FieldValue.serverTimestamp(),
         'participantNames': FieldValue.arrayUnion([user.fullName, widget.targetUserName]),
+        'unread_${widget.targetUserId}': true,
       }, SetOptions(merge: true));
 
       if (editingId != null) {
@@ -130,6 +132,19 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         );
 
         await messagesRef.add(newMessage.toMap());
+
+        // Trigger push notification via Vercel
+        await FirebaseNotificationService().sendNotificationTrigger(
+          recipientId: widget.targetUserId,
+          title: user.fullName,
+          body: actualText.isNotEmpty 
+              ? actualText 
+              : (mediaType == MediaType.image ? '📷 Photo' : '🎵 Voice note'),
+          data: {
+            'type': replyId != null ? 'reply' : 'message',
+            'chatId': widget.chatId,
+          },
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -228,6 +243,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         .collection('messages')
         .doc(messageId)
         .update({'read': true});
+        
+    final user = context.read<AuthService>().currentUser;
+    if (user != null) {
+      FirebaseFirestore.instance
+          .collection('chats')
+          .doc(widget.chatId)
+          .set({'unread_${user.id}': false}, SetOptions(merge: true));
+    }
   }
 
   void _showActionSheet(MessageModel message, bool isMine) {
@@ -261,6 +284,19 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 .collection('messages')
                 .doc(message.id)
                 .update({'reactions': reactions});
+            
+            // Trigger push notification via Vercel (only if not reacting to own message)
+            if (message.senderId != user.id) {
+               await FirebaseNotificationService().sendNotificationTrigger(
+                 recipientId: message.senderId,
+                 title: '${user.fullName} reacted $emoji to your message',
+                 body: message.text.isNotEmpty ? message.text : 'Media message',
+                 data: {
+                   'type': 'reaction',
+                   'chatId': widget.chatId,
+                 },
+               );
+            }
           } catch (e) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Reaction failed: $e')));

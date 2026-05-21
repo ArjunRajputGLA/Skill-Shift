@@ -100,7 +100,23 @@ class ChatListScreen extends StatelessWidget {
                       color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                     ),
                   ),
+                  trailing: data['unread_${user.id}'] == true
+                      ? Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.error,
+                            shape: BoxShape.circle,
+                          ),
+                        )
+                      : null,
                   onTap: () {
+                    // Mark as read immediately on UI side before navigating
+                    FirebaseFirestore.instance
+                        .collection('chats')
+                        .doc(docs[index].id)
+                        .set({'unread_${user.id}': false}, SetOptions(merge: true));
+                        
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => ChatDetailScreen(

@@ -13,6 +13,7 @@ class UserModel {
   final String whatsapp;
   final bool profileCompleted;
   final String? profileImageBase64;
+  final String? fcmToken;
   final DateTime? createdAt;
 
   UserModel({
@@ -28,6 +29,7 @@ class UserModel {
     this.whatsapp = '',
     this.profileCompleted = false,
     this.profileImageBase64,
+    this.fcmToken,
     this.createdAt,
   });
 
@@ -45,6 +47,7 @@ class UserModel {
       'whatsapp': whatsapp,
       'profileCompleted': profileCompleted,
       'profileImageBase64': profileImageBase64,
+      'fcmToken': fcmToken,
       'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
     };
   }
@@ -63,6 +66,7 @@ class UserModel {
       whatsapp: map['whatsapp'] ?? '',
       profileCompleted: map['profileCompleted'] ?? false,
       profileImageBase64: map['profileImageBase64'],
+      fcmToken: map['fcmToken'],
       createdAt: map['createdAt'] != null 
           ? (map['createdAt'] as Timestamp).toDate() 
           : null,

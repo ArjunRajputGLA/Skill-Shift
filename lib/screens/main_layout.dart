@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/theme_provider.dart';
@@ -311,11 +312,24 @@ class _FloatingGlassNav extends StatelessWidget {
                 isSelected: currentIndex == 2,
                 onTap: () => onTap(2),
               ),
-              _NavItem(
-                icon: Icons.chat_bubble_outline,
-                activeIcon: Icons.chat_bubble_rounded,
-                isSelected: currentIndex == 3,
-                onTap: () => onTap(3),
+              StreamBuilder<QuerySnapshot>(
+                stream: context.read<AuthService>().currentUser == null 
+                  ? const Stream.empty()
+                  : FirebaseFirestore.instance
+                      .collection('chats')
+                      .where('unread_${context.read<AuthService>().currentUser!.id}', isEqualTo: true)
+                      .limit(1)
+                      .snapshots(),
+                builder: (context, snapshot) {
+                  bool hasUnread = snapshot.hasData && snapshot.data!.docs.isNotEmpty;
+                  return _NavItem(
+                    icon: Icons.chat_bubble_outline,
+                    activeIcon: Icons.chat_bubble_rounded,
+                    isSelected: currentIndex == 3,
+                    hasUnread: hasUnread,
+                    onTap: () => onTap(3),
+                  );
+                }
               ),
               _NavItem(
                 icon: Icons.person_outline,
@@ -331,45 +345,108 @@ class _FloatingGlassNav extends StatelessWidget {
   }
 }
 
-class _NavItem extends StatelessWidget {
+class _NavItem extends StatefulWidget {
   final IconData icon;
   final IconData activeIcon;
   final bool isSelected;
+  final bool hasUnread;
   final VoidCallback onTap;
 
   const _NavItem({
     required this.icon,
     required this.activeIcon,
     required this.isSelected,
+    this.hasUnread = false,
     required this.onTap,
   });
+
+  @override
+  State<_NavItem> createState() => _NavItemState();
+}
+
+class _NavItemState extends State<_NavItem> with SingleTickerProviderStateMixin {
+  late AnimationController _blinkController;
+
+  @override
+  void initState() {
+    super.initState();
+    _blinkController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    if (widget.hasUnread) {
+      _blinkController.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _NavItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.hasUnread && !oldWidget.hasUnread) {
+      _blinkController.repeat(reverse: true);
+    } else if (!widget.hasUnread && oldWidget.hasUnread) {
+      _blinkController.stop();
+      _blinkController.value = 1.0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _blinkController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: AppSpacing.durationFast,
         curve: Curves.easeOutCirc,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected 
+          color: widget.isSelected 
               ? theme.colorScheme.primary.withValues(alpha: 0.15) 
               : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
-        child: AnimatedSwitcher(
-          duration: AppSpacing.durationFast,
-          child: Icon(
-            isSelected ? activeIcon : icon,
-            key: ValueKey(isSelected),
-            size: 26,
-            color: isSelected 
-                ? theme.colorScheme.primary 
-                : theme.iconTheme.color?.withValues(alpha: 0.6),
-          ),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            AnimatedSwitcher(
+              duration: AppSpacing.durationFast,
+              child: Icon(
+                widget.isSelected ? widget.activeIcon : widget.icon,
+                key: ValueKey(widget.isSelected),
+                size: 26,
+                color: widget.isSelected 
+                    ? theme.colorScheme.primary 
+                    : theme.iconTheme.color?.withValues(alpha: 0.6),
+              ),
+            ),
+            if (widget.hasUnread)
+              Positioned(
+                top: -2,
+                right: -2,
+                child: FadeTransition(
+                  opacity: _blinkController,
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.error,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: theme.colorScheme.surface,
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
