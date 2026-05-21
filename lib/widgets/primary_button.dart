@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'custom_button.dart';
 
 class PrimaryButton extends StatelessWidget {
   final String label;
@@ -16,35 +17,12 @@ class PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (icon != null) {
-      return ElevatedButton.icon(
-        onPressed: isLoading ? null : onPressed,
-        icon: isLoading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            : Icon(icon, size: 20),
-        label: Text(label),
-      );
-    }
-
-    return ElevatedButton(
-      onPressed: isLoading ? null : onPressed,
-      child: isLoading
-          ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
-            )
-          : Text(label),
+    return CustomButton(
+      label: label,
+      onPressed: onPressed,
+      isLoading: isLoading,
+      icon: icon,
+      isPrimary: true,
     );
   }
 }
@@ -53,26 +31,24 @@ class SecondaryButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
   final IconData? icon;
+  final bool isLoading;
 
   const SecondaryButton({
     super.key,
     required this.label,
     this.onPressed,
     this.icon,
+    this.isLoading = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (icon != null) {
-      return TextButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon, size: 20),
-        label: Text(label),
-      );
-    }
-    return TextButton(
+    return CustomButton(
+      label: label,
       onPressed: onPressed,
-      child: Text(label),
+      isLoading: isLoading,
+      icon: icon,
+      isPrimary: false,
     );
   }
 }

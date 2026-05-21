@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import '../services/auth_service.dart';
+import '../services/notification_service.dart';
 import '../models/user_model.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/avatar_widget.dart';
+import '../widgets/custom_chip.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -30,6 +38,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final TextEditingController _interestController = TextEditingController();
 
   bool _isLoading = false;
+  String? _profileImageBase64;
 
   @override
   void initState() {
@@ -44,6 +53,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     
     _skills = List<String>.from(user?.skills ?? []);
     _interests = List<String>.from(user?.interests ?? []);
+    _profileImageBase64 = user?.profileImageBase64;
   }
 
   @override
@@ -59,6 +69,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
+  // ALL backend logic preserved exactly
   void _addSkill() {
     final skill = _skillController.text.trim();
     if (skill.isNotEmpty && !_skills.contains(skill)) {
@@ -79,17 +90,109 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  void _showImageOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusXl)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Profile Picture', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: AppSpacing.lg),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Take a photo'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickAndCropImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Choose from gallery'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickAndCropImage(ImageSource.gallery);
+              },
+            ),
+            if (_profileImageBase64 != null && _profileImageBase64!.isNotEmpty)
+              ListTile(
+                leading: Icon(Icons.delete_outline, color: AppColors.error),
+                title: Text('Remove photo', style: TextStyle(color: AppColors.error)),
+                onTap: () {
+                  Navigator.pop(context);
+                  setState(() => _profileImageBase64 = null);
+                },
+              ),
+            const SizedBox(height: AppSpacing.lg),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAndCropImage(ImageSource source) async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: source);
+      if (image == null) return;
+
+      final CroppedFile? croppedFile = await ImageCropper().cropImage(
+        sourcePath: image.path,
+        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+        compressQuality: 70,
+        maxWidth: 400,
+        maxHeight: 400,
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Crop Profile Picture',
+            toolbarColor: AppColors.primary,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.square,
+            lockAspectRatio: true,
+          ),
+          IOSUiSettings(
+            title: 'Crop Profile Picture',
+            aspectRatioLockEnabled: true,
+            resetAspectRatioEnabled: false,
+          ),
+        ],
+      );
+
+      if (croppedFile != null) {
+        final bytes = await croppedFile.readAsBytes();
+        setState(() {
+          _profileImageBase64 = base64Encode(bytes);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        NotificationService.showError(context, 'Failed to pick/crop image: $e');
+      }
+    }
+  }
+
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
+    NotificationService.showLoading(context);
 
     final currentUser = context.read<AuthService>().currentUser;
-    if (currentUser == null) return;
+    if (currentUser == null) {
+      NotificationService.hideLoading(context);
+      return;
+    }
 
     final updatedUser = UserModel(
       id: currentUser.id,
-      email: currentUser.email, // Email usually read-only
+      email: currentUser.email,
       fullName: _fullNameController.text.trim(),
       collegeName: _collegeNameController.text.trim(),
       branch: _branchController.text.trim(),
@@ -98,20 +201,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       whatsapp: _whatsappController.text.trim(),
       skills: _skills,
       interests: _interests,
-      profileCompleted: true, // Marking as complete if not already
+      profileCompleted: true,
+      profileImageBase64: _profileImageBase64,
       createdAt: currentUser.createdAt,
     );
 
     final error = await context.read<AuthService>().updateProfile(updatedUser);
 
     if (mounted) {
+      NotificationService.hideLoading(context);
       setState(() => _isLoading = false);
       if (error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+        NotificationService.showError(context, error);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile updated successfully!')),
-        );
+        NotificationService.showSuccess(context, 'Profile updated successfully!');
         Navigator.pop(context);
       }
     }
@@ -130,13 +233,43 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           physics: const BouncingScrollPhysics(),
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                GestureDetector(
+                  onTap: _showImageOptions,
+                  child: Stack(
+                    children: [
+                      AvatarWidget(
+                        imageBase64: _profileImageBase64,
+                        name: _fullNameController.text,
+                        radius: 50,
+                        showGlow: true,
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isDark ? AppColors.darkSurface : Colors.white,
+                              width: 2,
+                            ),
+                          ),
+                          child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xxl),
                 GlassCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -146,14 +279,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         controller: _fullNameController,
                         validator: (v) => v!.isEmpty ? 'Required' : null,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppSpacing.lg),
                       CustomTextField(
                         label: 'Bio',
                         controller: _bioController,
                         maxLines: 3,
                         hint: 'Tell us about yourself...',
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppSpacing.lg),
                       CustomTextField(
                         label: 'WhatsApp Number',
                         controller: _whatsappController,
@@ -162,10 +295,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xxl),
                 
-                Text('Education', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Education', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(height: AppSpacing.md),
                 GlassCard(
                   child: Column(
                     children: [
@@ -173,7 +309,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         label: 'College/University',
                         controller: _collegeNameController,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppSpacing.lg),
                       Row(
                         children: [
                           Expanded(
@@ -182,7 +318,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               controller: _branchController,
                             ),
                           ),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: AppSpacing.lg),
                           Expanded(
                             child: CustomTextField(
                               label: 'Year',
@@ -194,10 +330,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xxl),
 
-                Text('Skills (Can Teach)', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Skills (Can Teach)', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(height: AppSpacing.md),
                 GlassCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -211,7 +350,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               controller: _skillController,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: AppSpacing.md),
                           IconButton(
                             icon: Icon(Icons.add_circle, color: theme.colorScheme.primary, size: 30),
                             onPressed: _addSkill,
@@ -219,24 +358,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ],
                       ),
                       if (_skills.isNotEmpty) ...[
-                        const SizedBox(height: 12),
+                        const SizedBox(height: AppSpacing.md),
                         Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: _skills.map((s) => Chip(
-                            label: Text(s),
-                            deleteIcon: const Icon(Icons.close, size: 18),
-                            onDeleted: () => setState(() => _skills.remove(s)),
+                          spacing: AppSpacing.sm,
+                          runSpacing: AppSpacing.sm,
+                          children: _skills.map((s) => CustomChip(
+                            label: s,
+                            variant: ChipVariant.accent,
+                            onDelete: () => setState(() => _skills.remove(s)),
                           )).toList(),
                         ),
                       ]
-                    ], // Children
+                    ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xxl),
 
-                Text('Interests (Wants to Learn)', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Interests (Wants to Learn)', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(height: AppSpacing.md),
                 GlassCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,7 +392,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               controller: _interestController,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: AppSpacing.md),
                           IconButton(
                             icon: Icon(Icons.add_circle, color: theme.colorScheme.secondary, size: 30),
                             onPressed: _addInterest,
@@ -258,21 +400,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ],
                       ),
                       if (_interests.isNotEmpty) ...[
-                        const SizedBox(height: 12),
+                        const SizedBox(height: AppSpacing.md),
                         Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: _interests.map((i) => Chip(
-                            label: Text(i),
-                            deleteIcon: const Icon(Icons.close, size: 18),
-                            onDeleted: () => setState(() => _interests.remove(i)),
+                          spacing: AppSpacing.sm,
+                          runSpacing: AppSpacing.sm,
+                          children: _interests.map((i) => CustomChip(
+                            label: i,
+                            variant: ChipVariant.outlined,
+                            onDelete: () => setState(() => _interests.remove(i)),
                           )).toList(),
                         ),
                       ]
                     ],
                   ),
                 ),
-                const SizedBox(height: 36),
+                const SizedBox(height: AppSpacing.xxxl),
 
                 CustomButton(
                   label: 'Save Profile',
@@ -280,7 +422,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   onPressed: _saveProfile,
                   icon: Icons.check_circle_outline,
                 ),
-                const SizedBox(height: 48),
+                const SizedBox(height: AppSpacing.huge),
               ],
             ),
           ),

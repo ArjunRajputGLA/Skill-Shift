@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_spacing.dart';
 
 class CustomButton extends StatefulWidget {
   final String label;
@@ -6,6 +7,7 @@ class CustomButton extends StatefulWidget {
   final bool isLoading;
   final IconData? icon;
   final bool isPrimary;
+  final Gradient? gradient;
 
   const CustomButton({
     super.key,
@@ -14,22 +16,24 @@ class CustomButton extends StatefulWidget {
     this.isLoading = false,
     this.icon,
     this.isPrimary = true,
+    this.gradient,
   });
 
   @override
   State<CustomButton> createState() => _CustomButtonState();
 }
 
-class _CustomButtonState extends State<CustomButton> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
+class _CustomButtonState extends State<CustomButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 150),
+      duration: AppSpacing.durationMicro,
     );
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.96).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
@@ -57,36 +61,45 @@ class _CustomButtonState extends State<CustomButton> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+    final bool hasGradient = widget.gradient != null && widget.isPrimary;
+
     return GestureDetector(
       onTapDown: _onTapDown,
       onTapUp: _onTapUp,
       onTapCancel: _onTapCancel,
       onTap: widget.isLoading ? null : widget.onPressed,
-      child: AnimatedBuilder(
-        animation: _scaleAnimation,
-        builder: (context, child) => Transform.scale(
-          scale: _scaleAnimation.value,
-          child: child,
-        ),
+      child: ScaleTransition(
+        scale: _scaleAnimation,
         child: Container(
-          height: 52,
+          height: 56,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: widget.isPrimary 
-                ? (widget.onPressed == null ? theme.disabledColor : theme.colorScheme.primary)
-                : Colors.transparent,
-            border: widget.isPrimary ? null : Border.all(
-              color: widget.onPressed == null ? theme.disabledColor : theme.colorScheme.primary,
-              width: 1.5,
-            ),
-            boxShadow: widget.isPrimary && widget.onPressed != null ? [
-              BoxShadow(
-                color: theme.colorScheme.primary.withOpacity(0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              )
-            ] : null,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+            gradient: hasGradient ? widget.gradient : null,
+            color: hasGradient
+                ? null
+                : widget.isPrimary
+                    ? (widget.onPressed == null
+                        ? theme.disabledColor
+                        : theme.colorScheme.primary)
+                    : Colors.transparent,
+            border: widget.isPrimary
+                ? null
+                : Border.all(
+                    color: widget.onPressed == null
+                        ? theme.disabledColor
+                        : theme.colorScheme.primary,
+                    width: 1.5,
+                  ),
+            boxShadow: widget.isPrimary && widget.onPressed != null
+                ? [
+                    BoxShadow(
+                      color:
+                          theme.colorScheme.primary.withValues(alpha: 0.25),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
+                    ),
+                  ]
+                : null,
           ),
           child: Center(
             child: widget.isLoading
@@ -95,7 +108,9 @@ class _CustomButtonState extends State<CustomButton> with SingleTickerProviderSt
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: widget.isPrimary ? theme.colorScheme.onPrimary : theme.colorScheme.primary,
+                      color: widget.isPrimary
+                          ? theme.colorScheme.onPrimary
+                          : theme.colorScheme.primary,
                     ),
                   )
                 : Row(
@@ -103,16 +118,20 @@ class _CustomButtonState extends State<CustomButton> with SingleTickerProviderSt
                     children: [
                       if (widget.icon != null) ...[
                         Icon(
-                          widget.icon, 
-                          size: 20, 
-                          color: widget.isPrimary ? theme.colorScheme.onPrimary : theme.colorScheme.primary
+                          widget.icon,
+                          size: 20,
+                          color: widget.isPrimary
+                              ? theme.colorScheme.onPrimary
+                              : theme.colorScheme.primary,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.sm),
                       ],
                       Text(
                         widget.label,
                         style: theme.textTheme.labelLarge?.copyWith(
-                          color: widget.isPrimary ? theme.colorScheme.onPrimary : theme.colorScheme.primary,
+                          color: widget.isPrimary
+                              ? theme.colorScheme.onPrimary
+                              : theme.colorScheme.primary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),

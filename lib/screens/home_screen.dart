@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
-import '../theme/theme_provider.dart';
+import '../theme/app_spacing.dart';
 import '../widgets/post_card.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/animated_list_item.dart';
 import '../models/post_model.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -13,8 +14,10 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
       body: SafeArea(
+        bottom: false,
         child: StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
               .collection('posts')
@@ -26,11 +29,15 @@ class HomeScreen extends StatelessWidget {
           }
 
           if (snapshot.hasError) {
-            return Center(child: Text('Error loading posts: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
+            return Center(
+              child: Text(
+                'Error loading posts: ${snapshot.error}',
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            );
           }
 
           if (snapshot.hasData && snapshot.data!.metadata.isFromCache) {
-            // This tells us if Firebase is failing to reach the cloud and silently falling back to the local database
             debugPrint("WARNING: Firestore data is coming from the OFFLINE CACHE, not the live server!");
           }
 
@@ -47,7 +54,7 @@ class HomeScreen extends StatelessWidget {
 
           final filteredDocs = docs.where((doc) {
             final data = doc.data() as Map<String, dynamic>;
-            return data['uid'] != user?.id; // Filter out own posts
+            return data['uid'] != user?.id;
           }).toList();
 
           if (filteredDocs.isEmpty) {
@@ -58,22 +65,37 @@ class HomeScreen extends StatelessWidget {
             );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.only(top: 8.0, bottom: 24.0),
-            itemCount: filteredDocs.length,
-            itemBuilder: (context, index) {
-              final data = filteredDocs[index].data() as Map<String, dynamic>;
-              final post = PostModel.fromMap(data, filteredDocs[index].id);
-
-              return PostCard(
-                ownerUid: post.uid,
-                userName: post.userName,
-                branchYear: '${post.branch} • ${post.year}',
-                title: post.title,
-                description: post.description,
-                tags: post.tags,
-              );
+          return RefreshIndicator(
+            onRefresh: () async {
+              // StreamBuilder auto-refreshes, but the gesture feels premium
+              await Future.delayed(const Duration(milliseconds: 500));
             },
+            color: Theme.of(context).colorScheme.primary,
+            child: ListView.builder(
+              padding: const EdgeInsets.only(
+              bottom: AppSpacing.navClearance,
+              ),
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
+              itemCount: filteredDocs.length,
+              itemBuilder: (context, index) {
+                final data = filteredDocs[index].data() as Map<String, dynamic>;
+                final post = PostModel.fromMap(data, filteredDocs[index].id);
+
+                return AnimatedListItem(
+                  index: index,
+                  child: PostCard(
+                    ownerUid: post.uid,
+                    userName: post.userName,
+                    branchYear: '${post.branch} • ${post.year}',
+                    title: post.title,
+                    description: post.description,
+                    tags: post.tags,
+                  ),
+                );
+              },
+            ),
           );
         },
       ),
@@ -81,4 +103,3 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
-

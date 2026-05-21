@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
+import 'notification_service.dart';
 import 'package:flutter/foundation.dart';
 
 class AuthService extends ChangeNotifier {
@@ -56,23 +57,30 @@ class AuthService extends ChangeNotifier {
           createdAt: DateTime.now(),
         );
 
-        await _firestore
-            .collection('users')
-            .doc(cred.user!.uid)
-            .set(newUser.toMap())
-            .timeout(
-              const Duration(seconds: 5),
-              onTimeout: () => throw Exception('Firestore timeout.'),
-            );
+        try {
+          debugPrint("ATTEMPTING TO SAVE USER TO FIRESTORE: ${cred.user!.uid}");
+          await _firestore
+              .collection('users')
+              .doc(cred.user!.uid)
+              .set(newUser.toMap())
+              .timeout(
+                const Duration(seconds: 5),
+                onTimeout: () => throw Exception('Firestore timeout.'),
+              );
+          debugPrint("USER SAVED SUCCESSFULLY");
+        } catch (e) {
+          debugPrint("FIRESTORE WRITE FAILED: $e");
+          rethrow;
+        }
             
         _currentUser = newUser;
         notifyListeners();
       }
       return null;
     } on FirebaseAuthException catch (e) {
-      return e.message ?? 'Signup failed';
+      return NotificationService.getAuthErrorMessage(e.code);
     } catch (e) {
-      return e.toString();
+      return 'An unexpected error occurred. Please try again.';
     }
   }
 
@@ -81,9 +89,9 @@ class AuthService extends ChangeNotifier {
       await _auth.signInWithEmailAndPassword(email: email, password: password);
       return null; // Will trigger the auth listener!
     } on FirebaseAuthException catch (e) {
-      return e.message ?? 'Sign in failed';
+      return NotificationService.getAuthErrorMessage(e.code);
     } catch (e) {
-      return e.toString();
+      return 'An unexpected error occurred. Please try again.';
     }
   }
 

@@ -12,6 +12,7 @@ class UserModel {
   final String bio;
   final String whatsapp;
   final bool profileCompleted;
+  final String? profileImageBase64;
   final DateTime? createdAt;
 
   UserModel({
@@ -26,6 +27,7 @@ class UserModel {
     this.bio = '',
     this.whatsapp = '',
     this.profileCompleted = false,
+    this.profileImageBase64,
     this.createdAt,
   });
 
@@ -42,6 +44,7 @@ class UserModel {
       'bio': bio,
       'whatsapp': whatsapp,
       'profileCompleted': profileCompleted,
+      'profileImageBase64': profileImageBase64,
       'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
     };
   }
@@ -59,6 +62,7 @@ class UserModel {
       bio: map['bio'] ?? '',
       whatsapp: map['whatsapp'] ?? '',
       profileCompleted: map['profileCompleted'] ?? false,
+      profileImageBase64: map['profileImageBase64'],
       createdAt: map['createdAt'] != null 
           ? (map['createdAt'] as Timestamp).toDate() 
           : null,

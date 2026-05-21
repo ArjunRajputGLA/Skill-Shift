@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../models/user_model.dart';
+import '../services/notification_service.dart';
+import '../widgets/custom_text_field.dart';
+import '../widgets/gradient_background.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -35,17 +40,21 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     super.dispose();
   }
 
+  // ALL backend logic preserved exactly
   void _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
+    NotificationService.showLoading(context);
 
     final authService = Provider.of<AuthService>(context, listen: false);
     final currentUser = authService.currentUser;
 
-    if (currentUser == null) return;
+    if (currentUser == null) {
+      NotificationService.hideLoading(context);
+      return;
+    }
 
-    // Convert comma-separated string inputs to Lists
     final skillsList = _skillsController.text
         .split(',')
         .map((s) => s.trim())
@@ -58,7 +67,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         .where((s) => s.isNotEmpty)
         .toList();
 
-    // Create a modified copy of the current user
     UserModel updatedUser = UserModel(
       id: currentUser.id,
       fullName: currentUser.fullName,
@@ -70,154 +78,141 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       interests: interestsList,
       bio: _bioController.text.trim(),
       whatsapp: _whatsappController.text.trim(),
-      profileCompleted: true, // Marking true so they don't see this screen again
+      profileCompleted: true,
       createdAt: currentUser.createdAt ?? DateTime.now(),
     );
 
     final error = await authService.updateProfile(updatedUser);
 
     if (mounted) {
+      NotificationService.hideLoading(context);
       setState(() => _isLoading = false);
       if (error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving profile: $error')),
-        );
+        NotificationService.showError(context, 'Error saving profile: $error');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile Setup Complete! Welcome!')),
-        );
-        // We don't need to Navigator.push here because AuthWrapper in main.dart
-        // is listening to authService state changes and will automatically route 
-        // to HomeScreen now that profileCompleted == true!
+        NotificationService.showSuccess(context, 'Profile Setup Complete! Welcome!');
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Setup Your Profile'),
-        automaticallyImplyLeading: false, // Don't allow them to go back to blank screen
+        automaticallyImplyLeading: false,
       ),
-      body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  'Tell us about yourself so peers can find and connect with you.',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
-                ),
-                const SizedBox(height: 24),
-                
-                // College Information
-                TextFormField(
-                  controller: _collegeController,
-                  decoration: const InputDecoration(
-                    labelText: 'College Name', 
-                    border: OutlineInputBorder(),
-                    hintText: 'e.g. GLA University',
+      body: GradientBackground(
+        accentColor1: AppColors.primary,
+        accentColor2: AppColors.accent,
+        child: SafeArea(
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.xxl),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Tell us about yourself so peers can find and connect with you.',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                    ),
                   ),
-                  validator: (value) => value == null || value.isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _branchController,
-                        decoration: const InputDecoration(
-                          labelText: 'Branch',
-                          border: OutlineInputBorder(),
-                          hintText: 'e.g. CSE',
+                  const SizedBox(height: AppSpacing.xxl),
+                  
+                  // College Information
+                  CustomTextField(
+                    controller: _collegeController,
+                    label: 'College Name',
+                    hint: 'e.g. GLA University',
+                    prefixIcon: const Icon(Icons.school_outlined),
+                    validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CustomTextField(
+                          controller: _branchController,
+                          label: 'Branch',
+                          hint: 'e.g. CSE',
+                          validator: (value) => value == null || value.isEmpty ? 'Required' : null,
                         ),
-                        validator: (value) => value == null || value.isEmpty ? 'Required' : null,
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _yearController,
-                        decoration: const InputDecoration(
-                          labelText: 'Year',
-                          border: OutlineInputBorder(),
-                          hintText: 'e.g. 3rd Year',
+                      const SizedBox(width: AppSpacing.lg),
+                      Expanded(
+                        child: CustomTextField(
+                          controller: _yearController,
+                          label: 'Year',
+                          hint: 'e.g. 3rd Year',
+                          validator: (value) => value == null || value.isEmpty ? 'Required' : null,
                         ),
-                        validator: (value) => value == null || value.isEmpty ? 'Required' : null,
                       ),
+                    ],
+                  ),
+                  
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+                    child: Divider(),
+                  ),
+                  
+                  // Skills & Interests
+                  CustomTextField(
+                    controller: _skillsController,
+                    label: 'Your Skills (comma separated)',
+                    hint: 'e.g. Flutter, DSA, Public Speaking',
+                    prefixIcon: const Icon(Icons.star_outline),
+                    validator: (value) => value == null || value.isEmpty ? 'Please add at least one skill' : null,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  CustomTextField(
+                    controller: _interestsController,
+                    label: 'Things you want to learn/do',
+                    hint: 'e.g. Backend Dev, Find Co-founder',
+                    prefixIcon: const Icon(Icons.lightbulb_outline),
+                    validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  
+                  // Bio & Contact
+                  CustomTextField(
+                    controller: _bioController,
+                    maxLines: 3,
+                    label: 'Short Bio',
+                    hint: 'I help with Flutter and DSA. Looking for hackathon teammates.',
+                    validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  CustomTextField(
+                    controller: _whatsappController,
+                    label: 'WhatsApp Number (Optional)',
+                    keyboardType: TextInputType.phone,
+                    prefixIcon: const Icon(Icons.phone_outlined),
+                  ),
+                  
+                  const SizedBox(height: AppSpacing.xxxl),
+                  SizedBox(
+                    height: 52,
+                    child: FilledButton(
+                      onPressed: _isLoading ? null : _saveProfile,
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text('Complete Profile', style: TextStyle(fontSize: 16)),
                     ),
-                  ],
-                ),
-                
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24.0),
-                  child: Divider(),
-                ),
-                
-                // Skills & Interests
-                TextFormField(
-                  controller: _skillsController,
-                  decoration: const InputDecoration(
-                    labelText: 'Your Skills (comma separated)',
-                    border: OutlineInputBorder(),
-                    hintText: 'e.g. Flutter, DSA, Public Speaking',
                   ),
-                  validator: (value) => value == null || value.isEmpty ? 'Please add at least one skill' : null,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _interestsController,
-                  decoration: const InputDecoration(
-                    labelText: 'Things you want to learn/do',
-                    border: OutlineInputBorder(),
-                    hintText: 'e.g. Backend Dev, Find Co-founder',
-                  ),
-                  validator: (value) => value == null || value.isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: 16),
-                
-                // Bio & Contact
-                TextFormField(
-                  controller: _bioController,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: 'Short Bio',
-                    border: OutlineInputBorder(),
-                    hintText: 'I help with Flutter and DSA. Looking for hackathon teammates.',
-                  ),
-                  validator: (value) => value == null || value.isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _whatsappController,
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(
-                    labelText: 'WhatsApp Number (Optional)',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.phone),
-                  ),
-                ),
-                
-                const SizedBox(height: 32),
-                SizedBox(
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _saveProfile,
-                    style: ElevatedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Text('Complete Profile', style: TextStyle(fontSize: 18)),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
