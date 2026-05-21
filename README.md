@@ -1,17 +1,15 @@
-# skill_shift
+# Skill Shift
 
-A new Flutter project.
+Skill Shift is a platform to connect and exchange skills!
 
-## Getting Started
+## Features
+- **Real-time Chat**: Connect with users seamlessly.
+- **Push Notifications**: Receive instant push notifications powered by Vercel Serverless Functions and Firebase Cloud Messaging when you get a message or reaction.
+- **Unread Indicators**: See unread chat badges in the navigation bar and red dot indicators in your chat list.
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Backend Setup (Vercel)
+If you want to deploy the notification backend yourself:
+1. Navigate to the `vercel_backend` folder.
+2. Run `vercel` or `vercel --prod` to deploy.
+3. Configure your `FIREBASE_SERVICE_ACCOUNT_KEY` environment variable in the Vercel dashboard.
+4. Update the `VercelURL` inside `lib/services/firebase_notification_service.dart`.
