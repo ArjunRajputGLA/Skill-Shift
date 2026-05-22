@@ -42,6 +42,7 @@ class SkillShiftApp extends StatelessWidget {
     
     return MaterialApp(
       title: 'Skill Shift',
+      debugShowCheckedModeBanner: false,
       scaffoldMessengerKey: rootScaffoldMessengerKey,
       navigatorKey: rootNavigatorKey,
       theme: AppTheme.lightTheme,

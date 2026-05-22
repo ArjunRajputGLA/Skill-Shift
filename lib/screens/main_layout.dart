@@ -13,6 +13,8 @@ import 'explore_screen.dart';
 import 'posts_screen.dart';
 import 'chat_list_screen.dart';
 import 'profile_screen.dart';
+import 'notification_center_screen.dart';
+import '../services/notification_service.dart';
 
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
@@ -86,9 +88,11 @@ class MainLayoutState extends State<MainLayout> {
             SafeArea(
               bottom: false,
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.xxl,
-                  vertical: AppSpacing.md,
+                padding: const EdgeInsets.only(
+                  left: AppSpacing.lg,
+                  right: AppSpacing.lg,
+                  top: AppSpacing.md,
+                  bottom: AppSpacing.xs,
                 ),
                 child: _FloatingHeader(
                   title: _titles[_currentIndex],
@@ -231,12 +235,48 @@ class _FloatingHeader extends StatelessWidget {
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
               ),
-              IconButton(
-                icon: const Icon(Icons.notifications_none_rounded, size: 20),
-                color: isDark ? Colors.white : AppColors.lightTextPrimary,
-                onPressed: () {},
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+              StreamBuilder<int>(
+                stream: NotificationService.getUnreadCountStream(),
+                builder: (context, snapshot) {
+                  final unreadCount = snapshot.data ?? 0;
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.notifications_none_rounded, size: 20),
+                        color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const NotificationCenterScreen()),
+                          );
+                        },
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                      ),
+                      if (unreadCount > 0)
+                        Positioned(
+                          right: 8,
+                          top: 8,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.redAccent,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              unreadCount > 9 ? '9+' : unreadCount.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                }
               ),
               IconButton(
                 icon: const Icon(Icons.logout_rounded, size: 20),

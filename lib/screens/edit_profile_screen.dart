@@ -13,6 +13,8 @@ import '../widgets/avatar_widget.dart';
 import '../widgets/custom_chip.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
+import '../services/phone_auth_service.dart';
+import 'otp_verification_screen.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -39,6 +41,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   bool _isLoading = false;
   String? _profileImageBase64;
+  
+  bool _isWhatsAppVerified = false;
+  String _originalWhatsApp = '';
 
   @override
   void initState() {
@@ -54,6 +59,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _skills = List<String>.from(user?.skills ?? []);
     _interests = List<String>.from(user?.interests ?? []);
     _profileImageBase64 = user?.profileImageBase64;
+    _originalWhatsApp = user?.whatsapp ?? '';
+    _isWhatsAppVerified = user?.whatsappVerified ?? false;
   }
 
   @override
@@ -78,6 +85,49 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         _skillController.clear();
       });
     }
+  }
+
+  void _verifyPhoneNumber() async {
+    String phone = _whatsappController.text.replaceAll(' ', '');
+    if (!phone.startsWith('+')) {
+      NotificationService.showError(context, 'Please include country code (e.g. +91)');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    NotificationService.showLoading(context);
+    final phoneAuth = PhoneAuthService();
+
+    await phoneAuth.sendOtp(
+      phoneNumber: phone,
+      codeSent: (verificationId, resendToken) async {
+        NotificationService.hideLoading(context);
+        setState(() => _isLoading = false);
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OtpVerificationScreen(
+              phoneNumber: phone,
+              verificationId: verificationId,
+              resendToken: resendToken,
+            ),
+          ),
+        );
+        if (result == true) {
+          setState(() {
+            _originalWhatsApp = phone;
+            _isWhatsAppVerified = true;
+          });
+        }
+      },
+      verificationFailed: (error) {
+        NotificationService.hideLoading(context);
+        setState(() => _isLoading = false);
+        NotificationService.showError(context, error.message ?? 'Verification failed');
+      },
+      verificationCompleted: (cred) {},
+      codeAutoRetrievalTimeout: (id) {},
+    );
   }
 
   void _addInterest() {
@@ -180,6 +230,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
+    
+    final currentWhatsapp = _whatsappController.text.replaceAll(' ', '');
+    if (currentWhatsapp != _originalWhatsApp || !_isWhatsAppVerified) {
+      if (currentWhatsapp.isNotEmpty) {
+        NotificationService.showError(context, 'Please verify your WhatsApp number first.');
+        return;
+      }
+    }
 
     setState(() => _isLoading = true);
     NotificationService.showLoading(context);
@@ -198,7 +256,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       branch: _branchController.text.trim(),
       year: _yearController.text.trim(),
       bio: _bioController.text.trim(),
-      whatsapp: _whatsappController.text.trim(),
+      whatsapp: _originalWhatsApp,
+      whatsappVerified: _isWhatsAppVerified,
+      verifiedAt: currentUser.verifiedAt, // Preserve verifiedAt if unchanged
       skills: _skills,
       interests: _interests,
       profileCompleted: true,
@@ -291,7 +351,44 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         label: 'WhatsApp Number',
                         controller: _whatsappController,
                         keyboardType: TextInputType.phone,
+                        onChanged: (val) {
+                          if (val.replaceAll(' ', '') != _originalWhatsApp) {
+                            setState(() => _isWhatsAppVerified = false);
+                          } else {
+                            final user = context.read<AuthService>().currentUser;
+                            setState(() => _isWhatsAppVerified = user?.whatsappVerified ?? false);
+                          }
+                        },
                       ),
+                      if (!_isWhatsAppVerified && _whatsappController.text.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton.icon(
+                            onPressed: _isLoading ? null : _verifyPhoneNumber,
+                            icon: const Icon(Icons.verified_user_outlined, size: 18),
+                            label: const Text('Verify Number'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppColors.primary,
+                              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                            ),
+                          ),
+                        ),
+                      ],
+                      if (_isWhatsAppVerified && _whatsappController.text.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.check_circle, color: AppColors.success, size: 16),
+                              const SizedBox(width: 4),
+                              Text('Verified', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.success, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

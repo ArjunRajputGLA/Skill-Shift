@@ -33,7 +33,12 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const fcmToken = userDoc.data().fcmToken;
+    const userData = userDoc.data();
+    if (userData.notificationsEnabled === false) {
+      return res.status(200).json({ success: true, message: 'Notifications are disabled for this user' });
+    }
+
+    const fcmToken = userData.fcmToken;
     if (!fcmToken) {
       return res.status(400).json({ error: 'User does not have an FCM token' });
     }

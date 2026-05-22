@@ -10,71 +10,145 @@ import '../widgets/animated_list_item.dart';
 import '../widgets/custom_chip.dart';
 import 'main_layout.dart';
 
-class PostsScreen extends StatelessWidget {
+class PostsScreen extends StatefulWidget {
   const PostsScreen({super.key});
+
+  @override
+  State<PostsScreen> createState() => _PostsScreenState();
+}
+
+class _PostsScreenState extends State<PostsScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        extendBodyBehindAppBar: true,
-        body: SafeArea(
-          bottom: false,
-          child: Column(
-              children: [
-                TabBar(
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  dividerColor: Colors.transparent,
-                  indicator: BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
-                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                  ),
-                  tabs: const [
-                    Tab(text: 'Create Post'),
-                    Tab(text: 'My Posts'),
-                  ],
-                ),
-                Expanded(
-                  child: NotificationListener<ScrollUpdateNotification>(
-                    onNotification: (notification) {
-                      if (notification.metrics.axis == Axis.horizontal) {
-                        final metrics = notification.metrics;
-                        final mainState = context.findAncestorStateOfType<MainLayoutState>();
-                        if (mainState != null && mainState.pageController.hasClients) {
-                          if (metrics.pixels < metrics.minScrollExtent - 20) {
-                            mainState.pageController.animateToPage(
-                              1,
-                              duration: AppSpacing.durationNormal,
-                              curve: Curves.ease,
-                            );
-                          } else if (metrics.pixels > metrics.maxScrollExtent + 20) {
-                            mainState.pageController.animateToPage(
-                              3,
-                              duration: AppSpacing.durationNormal,
-                              curve: Curves.ease,
-                            );
-                          }
-                        }
-                      }
-                      return false;
-                    },
-                    child: const TabBarView(
-                      physics: BouncingScrollPhysics(),
-                      children: [
-                        _CreatePostTab(),
-                        _MyPostsTab(),
-                      ],
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
+      body: SafeArea(
+        top: false,
+        bottom: false,
+        child: Column(
+          children: [
+            const SizedBox(height: AppSpacing.md), // Very slight push down below header
+            
+            // Premium Segmented Control
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+              height: 48,
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9), // Slate 800 / Slate 100
+                borderRadius: BorderRadius.circular(100),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => _tabController.animateTo(0),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutCubic,
+                        decoration: BoxDecoration(
+                          color: _tabController.index == 0 ? theme.colorScheme.primary : Colors.transparent,
+                          borderRadius: BorderRadius.circular(100),
+                          boxShadow: _tabController.index == 0 ? [
+                            BoxShadow(color: theme.colorScheme.primary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 2))
+                          ] : null,
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          'Create Post',
+                          style: TextStyle(
+                            color: _tabController.index == 0 ? Colors.white : (isDark ? Colors.white70 : Colors.black54),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => _tabController.animateTo(1),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutCubic,
+                        decoration: BoxDecoration(
+                          color: _tabController.index == 1 ? theme.colorScheme.primary : Colors.transparent,
+                          borderRadius: BorderRadius.circular(100),
+                          boxShadow: _tabController.index == 1 ? [
+                            BoxShadow(color: theme.colorScheme.primary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 2))
+                          ] : null,
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          'My Posts',
+                          style: TextStyle(
+                            color: _tabController.index == 1 ? Colors.white : (isDark ? Colors.white70 : Colors.black54),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
+
+            Expanded(
+              child: NotificationListener<ScrollUpdateNotification>(
+                onNotification: (notification) {
+                  if (notification.metrics.axis == Axis.horizontal) {
+                    final metrics = notification.metrics;
+                    final mainState = context.findAncestorStateOfType<MainLayoutState>();
+                    if (mainState != null && mainState.pageController.hasClients) {
+                      if (metrics.pixels < metrics.minScrollExtent - 20) {
+                        mainState.pageController.animateToPage(
+                          1,
+                          duration: AppSpacing.durationNormal,
+                          curve: Curves.ease,
+                        );
+                      } else if (metrics.pixels > metrics.maxScrollExtent + 20) {
+                        mainState.pageController.animateToPage(
+                          3,
+                          duration: AppSpacing.durationNormal,
+                          curve: Curves.ease,
+                        );
+                      }
+                    }
+                  }
+                  return false;
+                },
+                child: TabBarView(
+                  controller: _tabController,
+                  physics: const BouncingScrollPhysics(),
+                  children: const [
+                    _CreatePostTab(),
+                    _MyPostsTab(),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
+      ),
     );
   }
 }
@@ -361,12 +435,21 @@ class _MyPostsTab extends StatelessWidget {
         }
 
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Center(
-            child: Text(
-              "You haven't made any posts yet.",
-              style: TextStyle(
-                color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                fontSize: 16,
+          return RefreshIndicator(
+            onRefresh: () async => Future.delayed(const Duration(milliseconds: 500)),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height,
+                child: Center(
+                  child: Text(
+                    "You haven't made any posts yet.",
+                    style: TextStyle(
+                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
               ),
             ),
           );
@@ -383,13 +466,16 @@ class _MyPostsTab extends StatelessWidget {
           return bDate.compareTo(aDate);
         });
 
-        return ListView.builder(
-          padding: EdgeInsets.only(
-            top: AppSpacing.sm,
-            bottom: dynamicBottomPadding,
-          ),
-          itemCount: posts.length,
-          itemBuilder: (context, index) {
+        return RefreshIndicator(
+          onRefresh: () async => Future.delayed(const Duration(milliseconds: 500)),
+          child: ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+            padding: EdgeInsets.only(
+              top: AppSpacing.sm,
+              bottom: dynamicBottomPadding,
+            ),
+            itemCount: posts.length,
+            itemBuilder: (context, index) {
             final post = posts[index];
 
             return AnimatedListItem(
@@ -452,8 +538,9 @@ class _MyPostsTab extends StatelessWidget {
               ),
             );
           },
-        );
-      },
+        ),
+      );
+    },
     );
   }
 }

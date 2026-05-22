@@ -95,6 +95,17 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  Future<String?> resetPassword(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+      return null;
+    } on FirebaseAuthException catch (e) {
+      return NotificationService.getAuthErrorMessage(e.code);
+    } catch (e) {
+      return 'An unexpected error occurred while resetting password.';
+    }
+  }
+
   // New method to handle saving the rest of the profile Setup!
   Future<String?> updateProfile(UserModel updatedUser) async {
     try {
@@ -112,6 +123,48 @@ class AuthService extends ChangeNotifier {
       return null;
     } catch (e) {
       return e.toString();
+    }
+  }
+
+  Future<String?> deleteAccount() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return "User is not logged in";
+      final uid = user.uid;
+
+      // 1. Delete user's posts
+      final postsSnapshot = await _firestore.collection('posts').where('authorId', isEqualTo: uid).get();
+      for (var doc in postsSnapshot.docs) {
+        await doc.reference.delete();
+      }
+
+      // 2. Delete user's chats and messages
+      final chatsSnapshot = await _firestore.collection('chats').where('participants', arrayContains: uid).get();
+      for (var doc in chatsSnapshot.docs) {
+        final messagesSnapshot = await doc.reference.collection('messages').get();
+        for (var mDoc in messagesSnapshot.docs) {
+          await mDoc.reference.delete();
+        }
+        await doc.reference.delete();
+      }
+
+      // 3. Delete user's Firestore document
+      await _firestore.collection('users').doc(uid).delete();
+
+      // 4. Delete the Firebase Auth record
+      await user.delete();
+
+      _currentUser = null;
+      notifyListeners();
+      return null;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        return 'For security reasons, please log out and log back in before deleting your account.';
+      }
+      return e.message ?? 'Failed to delete account';
+    } catch (e) {
+      debugPrint('Error deleting account: $e');
+      return 'An error occurred while deleting your account.';
     }
   }
 

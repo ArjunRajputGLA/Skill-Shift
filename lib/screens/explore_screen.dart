@@ -19,24 +19,115 @@ class ExploreScreen extends StatefulWidget {
 
 class _ExploreScreenState extends State<ExploreScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   String _searchQuery = '';
   String _selectedCategory = 'All';
 
   final List<String> _categories = [
-    'All',
-    'Coding',
-    'Design',
-    'Academics',
-    'Fitness',
-    'Language Learning',
-    'Public Speaking',
-    'Placement Prep',
-    'Startup/Business'
+    'All', 'Coding', 'Design', 'Academics', 'Fitness', 
+    'Language Learning', 'Public Speaking', 'Placement Prep', 
+    'Startup/Business', 'Photography', 'Video Editing', 
+    'Music', 'Web Dev', 'App Dev', 'Machine Learning', 
+    'Data Science', 'Marketing', 'UI/UX', 'Content Creation'
   ];
+
+  List<double> _tagWidths = [];
+  List<double> _cumulativeOffsets = [];
+  double _totalWidth = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _calculateTagWidths();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startAutoScroll();
+    });
+  }
+
+  void _calculateTagWidths() {
+    double currentOffset = 0.0;
+    for (String tag in _categories) {
+      final TextPainter textPainter = TextPainter(
+        text: TextSpan(text: tag, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+        maxLines: 1,
+        textDirection: TextDirection.ltr,
+      )..layout();
+      
+      final double width = textPainter.width + 36.0; 
+      _tagWidths.add(width);
+      _cumulativeOffsets.add(currentOffset);
+      currentOffset += width;
+    }
+    _totalWidth = currentOffset;
+  }
+
+  void _startAutoScroll() {
+    if (!mounted || !_scrollController.hasClients) return;
+    if (_searchQuery.isNotEmpty) return;
+    
+    final currentPosition = _scrollController.position.pixels;
+    final maxExtent = _scrollController.position.maxScrollExtent;
+    final remainingDistance = maxExtent - currentPosition;
+    
+    if (remainingDistance > 0) {
+      final durationInSeconds = (remainingDistance / 30).round();
+      if (durationInSeconds > 0) {
+        _scrollController.animateTo(
+          maxExtent,
+          duration: Duration(seconds: durationInSeconds),
+          curve: Curves.linear,
+        );
+      }
+    }
+  }
+
+  void _checkAndCenterTag(String query) {
+    if (query.isEmpty) {
+      _startAutoScroll();
+      return;
+    }
+    
+    int matchedIndex = -1;
+    for (int i = 0; i < _categories.length; i++) {
+      if (_categories[i].toLowerCase().contains(query)) {
+        matchedIndex = i;
+        break;
+      }
+    }
+    
+    if (matchedIndex != -1 && _scrollController.hasClients) {
+      _scrollController.jumpTo(_scrollController.offset);
+      
+      final double currentOffset = _scrollController.offset;
+      if (_totalWidth == 0.0) return;
+      final int currentLoop = (currentOffset / _totalWidth).floor();
+      final double screenWidth = MediaQuery.of(context).size.width;
+      final double screenCenter = currentOffset + screenWidth / 2;
+      
+      final double pos1 = 12.0 + ((currentLoop - 1) * _totalWidth) + _cumulativeOffsets[matchedIndex] + (_tagWidths[matchedIndex] / 2);
+      final double pos2 = 12.0 + (currentLoop * _totalWidth) + _cumulativeOffsets[matchedIndex] + (_tagWidths[matchedIndex] / 2);
+      final double pos3 = 12.0 + ((currentLoop + 1) * _totalWidth) + _cumulativeOffsets[matchedIndex] + (_tagWidths[matchedIndex] / 2);
+      
+      List<double> candidates = [pos1, pos2, pos3].where((p) => (p - screenWidth / 2) >= 0).toList();
+      if (candidates.isEmpty) candidates = [pos2, pos3]; 
+      
+      double bestPos = candidates.reduce((a, b) => (a - screenCenter).abs() < (b - screenCenter).abs() ? a : b);
+      
+      double centerOffset = bestPos - screenWidth / 2;
+      centerOffset = centerOffset.clamp(0.0, _scrollController.position.maxScrollExtent);
+      
+      _scrollController.animateTo(
+        centerOffset,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -49,6 +140,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
       body: SafeArea(
+        top: false,
         bottom: false,
         child: StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
@@ -144,8 +236,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
               }
             }
 
-            return CustomScrollView(
-              physics: const BouncingScrollPhysics(),
+            return RefreshIndicator(
+              onRefresh: () async => Future.delayed(const Duration(milliseconds: 500)),
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
               slivers: [
                 // 1. Search Bar & Categories in SliverAppBar
                 SliverAppBar(
@@ -154,15 +248,15 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   floating: true,
                   snap: true,
                   toolbarHeight: 0, // No default toolbar
-                  expandedHeight: 140, // Enough for search bar + tags
-                  collapsedHeight: 140,
+                  expandedHeight: 120, // Enough for search bar + tags
+                  collapsedHeight: 120,
                   flexibleSpace: FlexibleSpaceBar(
                     background: Column(
                       children: [
                         // Search Bar
                         Padding(
                           padding: const EdgeInsets.fromLTRB(
-                            AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.md,
+                            AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.md,
                           ),
                           child: TextField(
                             controller: _searchController,
@@ -170,6 +264,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                               setState(() {
                                 _searchQuery = val.toLowerCase();
                               });
+                              _checkAndCenterTag(_searchQuery);
                             },
                             style: TextStyle(
                               color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
@@ -203,28 +298,39 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         // Horizontal Category Filter Chips
                         SizedBox(
                           height: 50,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                            itemCount: _categories.length,
-                            itemBuilder: (context, index) {
-                              final category = _categories[index];
-                              final isSelected = _selectedCategory == category;
-                              
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
-                                child: CustomChip(
-                                  label: category,
-                                  isSelected: isSelected,
-                                  variant: ChipVariant.filled,
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedCategory = category;
-                                    });
-                                  },
-                                ),
-                              );
+                          child: NotificationListener<ScrollNotification>(
+                            onNotification: (notification) {
+                              if (notification is ScrollEndNotification) {
+                                Future.delayed(const Duration(milliseconds: 800), () {
+                                  if (mounted && _searchQuery.isEmpty) _startAutoScroll();
+                                });
+                              }
+                              return false;
                             },
+                            child: ListView.builder(
+                              controller: _scrollController,
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                              itemCount: _categories.length * 1000,
+                              itemBuilder: (context, index) {
+                                final category = _categories[index % _categories.length];
+                                final isSelected = _selectedCategory == category;
+                                
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  child: CustomChip(
+                                    label: category,
+                                    isSelected: isSelected,
+                                    variant: ChipVariant.filled,
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedCategory = category;
+                                      });
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
                           ),
                         ),
                       ],
@@ -235,6 +341,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 // 2. Post Listing
                 sliverList,
               ],
+              ),
             );
           },
         ),

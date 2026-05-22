@@ -122,8 +122,11 @@ class FirebaseNotificationService {
       // Check if the app is currently in foreground with an active context
       final context = rootNavigatorKey.currentContext;
       if (context != null) {
-        // Do nothing in foreground, the chat UI will update natively via streams
-        print('Foreground message received, skipping popup.');
+        // Show stylish in-app popup
+        NotificationService.showInfo(
+          context, 
+          '${notification.title}\n${notification.body ?? ""}'
+        );
       } else {
         // Fallback to system tray if context is unavailable
         const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(

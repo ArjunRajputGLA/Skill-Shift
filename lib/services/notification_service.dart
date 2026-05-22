@@ -1,8 +1,121 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class NotificationService {
+  // ---------------------------------------------------------------------------
+  // 1. IN-APP NOTIFICATION DATABASE LOGIC
+  // ---------------------------------------------------------------------------
+  
+  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  /// Creates a two-layer notification: 
+  /// 1. Saves to Firestore (powers the in-app Bell icon)
+  /// 2. Triggers Firebase Cloud Function for real Push Notification
+  static Future<void> createNotification({
+    required String receiverUid,
+    required String type,
+    required String title,
+    required String body,
+    required Map<String, dynamic> payload,
+  }) async {
+    final user = _auth.currentUser;
+    // Don't send notifications to yourself
+    if (user != null && user.uid == receiverUid) return;
+
+    final docRef = _firestore.collection('notifications').doc();
+    
+    await docRef.set({
+      'notificationId': docRef.id,
+      'receiverUid': receiverUid,
+      'senderUid': user?.uid ?? 'system',
+      'title': title,
+      'body': body,
+      'type': type, // 'message', 'session', 'endorsement', 'recommendation', 'system'
+      'isRead': false,
+      'timestamp': FieldValue.serverTimestamp(),
+      'payload': payload,
+    });
+  }
+
+  /// Stream to get the unread count for the Bell badge
+  static Stream<int> getUnreadCountStream() {
+    final user = _auth.currentUser;
+    if (user == null) return Stream.value(0);
+
+    return _firestore
+        .collection('notifications')
+        .where('receiverUid', isEqualTo: user.uid)
+        .where('isRead', isEqualTo: false)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
+  /// Stream to fetch notifications (Grouped in UI)
+  static Stream<QuerySnapshot> getNotificationsStream() {
+    final user = _auth.currentUser;
+    if (user == null) return const Stream.empty();
+
+    return _firestore
+        .collection('notifications')
+        .where('receiverUid', isEqualTo: user.uid)
+        .orderBy('timestamp', descending: true)
+        .limit(50) // Pagination/limit for performance
+        .snapshots();
+  }
+
+  static Future<void> markAsRead(String notificationId) async {
+    await _firestore.collection('notifications').doc(notificationId).update({
+      'isRead': true,
+    });
+  }
+
+  static Future<void> markAllAsRead() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final batch = _firestore.batch();
+    final snapshot = await _firestore
+        .collection('notifications')
+        .where('receiverUid', isEqualTo: user.uid)
+        .where('isRead', isEqualTo: false)
+        .get();
+
+    for (var doc in snapshot.docs) {
+      batch.update(doc.reference, {'isRead': true});
+    }
+
+    await batch.commit();
+  }
+
+  static Future<void> deleteNotification(String notificationId) async {
+    await _firestore.collection('notifications').doc(notificationId).delete();
+  }
+
+  static Future<void> deleteAllNotifications() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final batch = _firestore.batch();
+    final snapshot = await _firestore
+        .collection('notifications')
+        .where('receiverUid', isEqualTo: user.uid)
+        .get();
+
+    for (var doc in snapshot.docs) {
+      batch.delete(doc.reference);
+    }
+
+    await batch.commit();
+  }
+
+
+  // ---------------------------------------------------------------------------
+  // 2. UI POPUP LOGIC (Existing)
+  // ---------------------------------------------------------------------------
+
   static void _showPopup(BuildContext context, String message, Color color, IconData icon) {
-    // Remove any current SnackBar to avoid queuing delays
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     
     ScaffoldMessenger.of(context).showSnackBar(
@@ -50,7 +163,7 @@ class NotificationService {
   static void showLoading(BuildContext context) {
     showDialog(
       context: context,
-      barrierDismissible: false, // Prevents user from dismissing it
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return Center(
           child: Container(
@@ -70,7 +183,6 @@ class NotificationService {
   }
 
   static void hideLoading(BuildContext context) {
-    // Check if we can pop before popping to avoid exceptions
     if (Navigator.of(context, rootNavigator: true).canPop()) {
       Navigator.of(context, rootNavigator: true).pop();
     }

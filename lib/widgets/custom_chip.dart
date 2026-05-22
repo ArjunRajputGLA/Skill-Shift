@@ -15,6 +15,7 @@ class CustomChip extends StatefulWidget {
   final ChipVariant variant;
   final IconData? icon;
   final VoidCallback? onDelete;
+  final bool isVerified;
 
   const CustomChip({
     super.key,
@@ -24,6 +25,7 @@ class CustomChip extends StatefulWidget {
     this.variant = ChipVariant.filled,
     this.icon,
     this.onDelete,
+    this.isVerified = false,
   });
 
   @override
@@ -144,9 +146,11 @@ class _CustomChipState extends State<CustomChip>
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: _backgroundColor(isDark),
+            color: widget.isVerified ? const Color(0xFFFEF3C7).withValues(alpha: isDark ? 0.1 : 1.0) : _backgroundColor(isDark),
             borderRadius: BorderRadius.circular(100), // pill shape
-            border: _border(isDark),
+            border: widget.isVerified 
+                ? Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.5), width: 1.5)
+                : _border(isDark),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -160,11 +164,19 @@ class _CustomChipState extends State<CustomChip>
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight:
-                      widget.isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: fg,
+                      (widget.isSelected || widget.isVerified) ? FontWeight.w600 : FontWeight.w500,
+                  color: widget.isVerified ? const Color(0xFFD97706) : fg,
                   height: 1.2,
                 ),
               ),
+              if (widget.isVerified) ...[
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.stars_rounded,
+                  size: 16,
+                  color: Color(0xFFF59E0B),
+                ),
+              ],
               if (widget.onDelete != null) ...[
                 const SizedBox(width: 4),
                 GestureDetector(

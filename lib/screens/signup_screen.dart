@@ -7,6 +7,8 @@ import '../widgets/gradient_background.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../services/notification_service.dart';
+import '../services/google_auth_service.dart';
+import '../widgets/google_sign_in_button.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -21,6 +23,7 @@ class _SignupScreenState extends State<SignupScreen>
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
 
   late final AnimationController _fadeController;
   late final Animation<double> _fadeAnimation;
@@ -64,6 +67,24 @@ class _SignupScreenState extends State<SignupScreen>
       } else {
         NotificationService.showSuccess(context, "Account created successfully");
         Navigator.pop(context);
+      }
+    }
+  }
+
+  void _signupWithGoogle() async {
+    setState(() => _isGoogleLoading = true);
+    NotificationService.showLoading(context);
+
+    final error = await GoogleAuthService().signInWithGoogle();
+
+    if (mounted) {
+      NotificationService.hideLoading(context);
+      setState(() => _isGoogleLoading = false);
+      if (error != null) {
+        NotificationService.showError(context, error);
+      } else {
+        NotificationService.showSuccess(context, "Google signup successful");
+        Navigator.pop(context); // Optional depending on how nav is handled, but if authState changes it's automatic.
       }
     }
   }
@@ -139,6 +160,28 @@ class _SignupScreenState extends State<SignupScreen>
                       onPressed: _signup,
                       isLoading: _isLoading,
                     ),
+                    const SizedBox(height: AppSpacing.xl),
+                    Row(
+                      children: [
+                        const Expanded(child: Divider()),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                          child: Text(
+                            'OR',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                            ),
+                          ),
+                        ),
+                        const Expanded(child: Divider()),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    GoogleSignInButton(
+                      isLoading: _isGoogleLoading,
+                      onPressed: _signupWithGoogle,
+                    ),
+                    const SizedBox(height: AppSpacing.xxl),
                   ],
                 ),
               ),

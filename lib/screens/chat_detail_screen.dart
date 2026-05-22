@@ -19,6 +19,7 @@ import '../widgets/message_bubble.dart';
 import '../widgets/date_group_header.dart';
 import '../widgets/message_action_sheet.dart';
 import '../services/firebase_notification_service.dart';
+import '../services/notification_service.dart';
 
 class ChatDetailScreen extends StatefulWidget {
   final String chatId;
@@ -133,15 +134,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
         await messagesRef.add(newMessage.toMap());
 
-        // Trigger push notification via Vercel
-        await FirebaseNotificationService().sendNotificationTrigger(
-          recipientId: widget.targetUserId,
+        // Trigger push notification via unified Notification System
+        await NotificationService.createNotification(
+          receiverUid: widget.targetUserId,
+          type: 'message',
           title: user.fullName,
           body: actualText.isNotEmpty 
               ? actualText 
               : (mediaType == MediaType.image ? '📷 Photo' : '🎵 Voice note'),
-          data: {
-            'type': replyId != null ? 'reply' : 'message',
+          payload: {
             'chatId': widget.chatId,
           },
         );
@@ -285,14 +286,14 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 .doc(message.id)
                 .update({'reactions': reactions});
             
-            // Trigger push notification via Vercel (only if not reacting to own message)
+            // Trigger notification
             if (message.senderId != user.id) {
-               await FirebaseNotificationService().sendNotificationTrigger(
-                 recipientId: message.senderId,
+               await NotificationService.createNotification(
+                 receiverUid: message.senderId,
+                 type: 'message',
                  title: '${user.fullName} reacted $emoji to your message',
                  body: message.text.isNotEmpty ? message.text : 'Media message',
-                 data: {
-                   'type': 'reaction',
+                 payload: {
                    'chatId': widget.chatId,
                  },
                );

@@ -104,6 +104,12 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       appBar: AppBar(
         title: const Text('Setup Your Profile'),
         automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Provider.of<AuthService>(context, listen: false).signOut();
+          },
+        ),
       ),
       body: GradientBackground(
         accentColor1: AppColors.primary,
