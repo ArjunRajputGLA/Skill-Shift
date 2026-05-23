@@ -2,13 +2,13 @@
 <resources>
     <!-- Theme applied to the Android Window while the process is starting on API 31+ -->
     <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
-        <!-- Make the background pure black -->
-        <item name="android:windowSplashScreenBackground">@android:color/black</item>
+        <!-- Make the background pure white -->
+        <item name="android:windowSplashScreenBackground">@android:color/white</item>
         <!-- Hide the default launcher icon so it transitions seamlessly into the Flutter video -->
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/empty_icon</item>
         <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
-        <!-- For older APIs mapped through inheritance, keep it black -->
-        <item name="android:windowBackground">@android:color/black</item>
+        <!-- For older APIs mapped through inheritance, keep it white -->
+        <item name="android:windowBackground">@android:color/white</item>
     </style>
     
     <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">

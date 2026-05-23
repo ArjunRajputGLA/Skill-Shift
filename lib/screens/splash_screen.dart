@@ -84,18 +84,19 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.white,
       body: _controller.value.isInitialized
-          ? Center(
-              child: FractionallySizedBox(
-                widthFactor: 0.65, // Zoom out the video
-                child: AspectRatio(
-                  aspectRatio: _controller.value.aspectRatio,
+          ? SizedBox.expand(
+              child: FittedBox(
+                fit: BoxFit.contain,
+                child: SizedBox(
+                  width: _controller.value.size.width,
+                  height: _controller.value.size.height,
                   child: VideoPlayer(_controller),
                 ),
               ),
             )
-          : const Center(child: CircularProgressIndicator(color: Colors.white)),
+          : const Center(child: CircularProgressIndicator(color: Colors.black)),
     );
   }
 }
