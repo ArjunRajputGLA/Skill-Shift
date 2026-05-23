@@ -9,6 +9,7 @@ import '../widgets/animated_list_item.dart';
 import 'chat_detail_screen.dart';
 import 'bookings_tab.dart'; 
 import '../widgets/empty_state.dart';
+import '../widgets/animated_watermark.dart';
 
 class ChatListScreen extends StatelessWidget {
   const ChatListScreen({super.key});
@@ -27,42 +28,47 @@ class ChatListScreen extends StatelessWidget {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         extendBodyBehindAppBar: true,
-        body: SafeArea(
-          top: false,
-          bottom: false,
-          child: Column(
-            children: [
-              const SizedBox(height: AppSpacing.md),
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                ),
-                child: TabBar(
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  dividerColor: Colors.transparent,
-                  indicator: BoxDecoration(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        body: Stack(
+          children: [
+            const AnimatedWatermark(),
+            SafeArea(
+              top: false,
+              bottom: false,
+              child: Column(
+                children: [
+                  const SizedBox(height: AppSpacing.md),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                    ),
+                    child: TabBar(
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      dividerColor: Colors.transparent,
+                      indicator: BoxDecoration(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                      ),
+                      tabs: const [
+                        Tab(text: 'Messages'),
+                        Tab(text: 'My Bookings'),
+                      ],
+                    ),
                   ),
-                  tabs: const [
-                    Tab(text: 'Messages'),
-                    Tab(text: 'My Bookings'),
-                  ],
-                ),
+                  const SizedBox(height: AppSpacing.md),
+                  const Expanded(
+                    child: TabBarView(
+                      children: [
+                        _ChatsTab(),
+                        BookingsTab(),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: AppSpacing.md),
-              const Expanded(
-                child: TabBarView(
-                  children: [
-                    _ChatsTab(),
-                    BookingsTab(),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
