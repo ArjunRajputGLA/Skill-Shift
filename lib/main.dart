@@ -8,6 +8,7 @@ import 'services/firebase_notification_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_layout.dart';
 import 'screens/profile_setup_screen.dart';
+import 'screens/splash_screen.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_provider.dart';
 
@@ -51,7 +52,7 @@ class SkillShiftApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeProvider.themeMode,
-      home: const AuthWrapper(),
+      home: const SplashScreen(),
     );
   }
 }
