@@ -86,12 +86,11 @@ class _SplashScreenState extends State<SplashScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: _controller.value.isInitialized
-          ? SizedBox.expand(
-              child: FittedBox(
-                fit: BoxFit.contain,
-                child: SizedBox(
-                  width: _controller.value.size.width,
-                  height: _controller.value.size.height,
+          ? Center(
+              child: FractionallySizedBox(
+                widthFactor: 0.65, // Zoom out the video
+                child: AspectRatio(
+                  aspectRatio: _controller.value.aspectRatio,
                   child: VideoPlayer(_controller),
                 ),
               ),
