@@ -97,6 +97,26 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     setState(() => _isLoading = true);
     NotificationService.showLoading(context);
+
+    try {
+      final currentUser = context.read<AuthService>().currentUser;
+      final existingUsers = await FirebaseFirestore.instance
+          .collection('users')
+          .where('whatsapp', isEqualTo: phone)
+          .get();
+
+      for (var doc in existingUsers.docs) {
+        if (doc.id != currentUser?.id) {
+          NotificationService.hideLoading(context);
+          setState(() => _isLoading = false);
+          NotificationService.showError(context, 'This phone number is already registered to another account.');
+          return;
+        }
+      }
+    } catch (e) {
+      debugPrint("Error checking phone uniqueness: $e");
+    }
+
     final phoneAuth = PhoneAuthService();
 
     await phoneAuth.sendOtp(

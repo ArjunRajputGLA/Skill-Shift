@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/auth_service.dart';
 import '../models/user_model.dart';
 import '../services/notification_service.dart';
@@ -66,6 +68,27 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         .map((s) => s.trim())
         .where((s) => s.isNotEmpty)
         .toList();
+
+    final whatsapp = _whatsappController.text.trim();
+    if (whatsapp.isNotEmpty) {
+      try {
+        final existingUsers = await FirebaseFirestore.instance
+            .collection('users')
+            .where('whatsapp', isEqualTo: whatsapp)
+            .get();
+
+        for (var doc in existingUsers.docs) {
+          if (doc.id != currentUser.id) {
+            NotificationService.hideLoading(context);
+            setState(() => _isLoading = false);
+            NotificationService.showError(context, 'This phone number is already registered to another account.');
+            return;
+          }
+        }
+      } catch (e) {
+        debugPrint("Error checking phone uniqueness: $e");
+      }
+    }
 
     UserModel updatedUser = UserModel(
       id: currentUser.id,
