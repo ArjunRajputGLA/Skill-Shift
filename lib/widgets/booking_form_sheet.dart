@@ -6,6 +6,7 @@ import '../services/notification_service.dart';
 import '../models/booking_model.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
+import 'duolingo_button.dart';
 
 class BookingFormSheet extends StatefulWidget {
   final String mentorUid;
@@ -205,14 +206,11 @@ class _BookingFormSheetState extends State<BookingFormSheet> {
               ),
               const SizedBox(height: AppSpacing.xxxl),
 
-              SizedBox(
-                height: 52,
-                child: FilledButton(
-                  onPressed: _isLoading ? null : _submitRequest,
-                  child: _isLoading 
-                      ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Text('Send Request', style: TextStyle(fontSize: 16)),
-                ),
+              DuolingoButton(
+                title: 'Send Request',
+                color: AppColors.successGreen,
+                loading: _isLoading,
+                onPressed: _submitRequest,
               ),
             ],
           ),

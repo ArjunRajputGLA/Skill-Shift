@@ -99,7 +99,11 @@ class UserModel {
           ? (map['verifiedAt'] as Timestamp).toDate()
           : null,
       notificationsEnabled: map['notificationsEnabled'] ?? true,
-      profileCompleted: map['profileCompleted'] ?? false,
+      profileCompleted: map['profileCompleted'] ?? (
+        // If missing from DB, infer true if they have bio or skills
+        (map['skills'] != null && (map['skills'] as List).isNotEmpty) || 
+        (map['bio'] != null && map['bio'].toString().isNotEmpty)
+      ),
       profileImageBase64: map['profileImageBase64'],
       profileImageUrl: map['profileImageUrl'],
       fcmToken: map['fcmToken'],

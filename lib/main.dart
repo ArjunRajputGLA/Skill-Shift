@@ -18,9 +18,6 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  
-  // Initialize Push Notifications
-  await FirebaseNotificationService().initialize();
 
   runApp(
     MultiProvider(

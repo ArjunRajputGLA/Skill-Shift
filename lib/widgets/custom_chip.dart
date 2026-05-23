@@ -146,10 +146,10 @@ class _CustomChipState extends State<CustomChip>
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: widget.isVerified ? const Color(0xFFFEF3C7).withValues(alpha: isDark ? 0.1 : 1.0) : _backgroundColor(isDark),
+            color: widget.isVerified ? AppColors.verifiedGreen.withValues(alpha: 0.15) : _backgroundColor(isDark),
             borderRadius: BorderRadius.circular(100), // pill shape
             border: widget.isVerified 
-                ? Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.5), width: 1.5)
+                ? Border.all(color: AppColors.verifiedGreen.withValues(alpha: 0.5), width: 1.5)
                 : _border(isDark),
           ),
           child: Row(
@@ -165,16 +165,16 @@ class _CustomChipState extends State<CustomChip>
                   fontSize: 13,
                   fontWeight:
                       (widget.isSelected || widget.isVerified) ? FontWeight.w600 : FontWeight.w500,
-                  color: widget.isVerified ? const Color(0xFFD97706) : fg,
+                  color: widget.isVerified ? AppColors.verifiedGreen : fg,
                   height: 1.2,
                 ),
               ),
               if (widget.isVerified) ...[
                 const SizedBox(width: 4),
                 const Icon(
-                  Icons.stars_rounded,
+                  Icons.verified_rounded,
                   size: 16,
-                  color: Color(0xFFF59E0B),
+                  color: AppColors.verifiedGreen,
                 ),
               ],
               if (widget.onDelete != null) ...[

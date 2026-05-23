@@ -4,6 +4,7 @@ import '../services/auth_service.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/gradient_background.dart';
+import '../widgets/video_background.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../services/notification_service.dart';
@@ -53,14 +54,21 @@ class _SignupScreenState extends State<SignupScreen>
       return;
     }
 
+    if (_isLoading) return;
     setState(() => _isLoading = true);
-    NotificationService.showLoading(context);
+    NotificationService.showLoading(context, message: "Creating your account...");
 
     final authService = Provider.of<AuthService>(context, listen: false);
-    final error = await authService.signUp(name: name, email: email, password: password);
+    final navigator = Navigator.of(context, rootNavigator: true);
+    
+    final error = await authService.signUp(
+      email: email,
+      password: password,
+      name: name,
+    );
+    navigator.pop(); // Close dialog safely
 
     if (mounted) {
-      NotificationService.hideLoading(context);
       setState(() => _isLoading = false);
       if (error != null) {
         NotificationService.showError(context, error);
@@ -72,13 +80,16 @@ class _SignupScreenState extends State<SignupScreen>
   }
 
   void _signupWithGoogle() async {
+    if (_isGoogleLoading) return;
     setState(() => _isGoogleLoading = true);
-    NotificationService.showLoading(context);
+    NotificationService.showLoading(context, message: "Authenticating with Google...");
 
-    final error = await GoogleAuthService().signInWithGoogle();
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final navigator = Navigator.of(context, rootNavigator: true);
+    final error = await authService.signInWithGoogle();
+    navigator.pop(); // Close dialog safely
 
     if (mounted) {
-      NotificationService.hideLoading(context);
       setState(() => _isGoogleLoading = false);
       if (error != null) {
         NotificationService.showError(context, error);
@@ -104,12 +115,13 @@ class _SignupScreenState extends State<SignupScreen>
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('Create Account'),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: GradientBackground(
+      body: VideoBackground(
         accentColor1: AppColors.primary,
         accentColor2: AppColors.accent,
         child: SafeArea(

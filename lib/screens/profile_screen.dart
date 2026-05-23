@@ -358,9 +358,9 @@ class _PersonalProfileTabState extends State<_PersonalProfileTab> {
                         ? Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.verified, color: AppColors.success, size: 18),
+                              const Icon(Icons.verified, color: AppColors.verifiedGreen, size: 18),
                               const SizedBox(width: 4),
-                              Text('Verified', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.success, fontWeight: FontWeight.bold)),
+                              Text('Verified', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.verifiedGreen, fontWeight: FontWeight.bold)),
                             ],
                           )
                         : Row(

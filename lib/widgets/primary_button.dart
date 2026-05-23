@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'custom_button.dart';
+import 'duolingo_button.dart';
 
 class PrimaryButton extends StatelessWidget {
   final String label;
@@ -17,12 +18,12 @@ class PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomButton(
-      label: label,
+    return DuolingoButton(
+      title: label,
       onPressed: onPressed,
-      isLoading: isLoading,
+      loading: isLoading,
       icon: icon,
-      isPrimary: true,
+      color: Theme.of(context).colorScheme.primary,
     );
   }
 }

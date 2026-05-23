@@ -316,17 +316,41 @@ class _ExploreScreenState extends State<ExploreScreen> {
                                 final category = _categories[index % _categories.length];
                                 final isSelected = _selectedCategory == category;
                                 
+                                double startX = 0;
+                                double startY = 0;
+
                                 return Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 4),
-                                  child: CustomChip(
-                                    label: category,
-                                    isSelected: isSelected,
-                                    variant: ChipVariant.filled,
-                                    onTap: () {
-                                      setState(() {
-                                        _selectedCategory = category;
-                                      });
+                                  child: Listener(
+                                    onPointerDown: (e) {
+                                      startX = e.position.dx;
+                                      startY = e.position.dy;
                                     },
+                                    onPointerUp: (e) {
+                                      final distance = (e.position.dx - startX).abs() + (e.position.dy - startY).abs();
+                                      if (distance < 10) {
+                                        if (_selectedCategory != category) {
+                                          setState(() {
+                                            _selectedCategory = category;
+                                          });
+                                        }
+                                        Future.delayed(const Duration(milliseconds: 100), () {
+                                          if (mounted && _searchQuery.isEmpty) _startAutoScroll();
+                                        });
+                                      }
+                                    },
+                                    child: CustomChip(
+                                      label: category,
+                                      isSelected: isSelected,
+                                      variant: ChipVariant.filled,
+                                      onTap: () {
+                                        if (_selectedCategory != category) {
+                                          setState(() {
+                                            _selectedCategory = category;
+                                          });
+                                        }
+                                      },
+                                    ),
                                   ),
                                 );
                               },

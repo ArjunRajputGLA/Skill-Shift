@@ -11,6 +11,7 @@ import '../widgets/custom_chip.dart';
 import '../widgets/avatar_widget.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
+import '../widgets/duolingo_button.dart';
 import '../widgets/booking_form_sheet.dart';
 
 class PublicProfileScreen extends StatelessWidget {
@@ -141,32 +142,29 @@ class PublicProfileScreen extends StatelessWidget {
 
                 // Session Booking
                 const SizedBox(height: AppSpacing.md),
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: FilledButton.icon(
-                    icon: const Icon(Icons.calendar_month_rounded),
-                    label: const Text('Request Session', style: TextStyle(fontSize: 16)),
-                    onPressed: () {
-                      if (currentUser == null) {
-                        NotificationService.showError(context, 'Please login first');
-                        return;
-                      }
-                      if (currentUser.id == userId) {
-                        NotificationService.showError(context, 'You cannot book a session with yourself');
-                        return;
-                      }
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (context) => BookingFormSheet(
-                          mentorUid: userId,
-                          mentorName: user.fullName,
-                        ),
-                      );
-                    },
-                  ),
+                DuolingoButton(
+                  icon: Icons.calendar_month_rounded,
+                  title: 'Request Session',
+                  color: Theme.of(context).colorScheme.primary,
+                  onPressed: () {
+                    if (currentUser == null) {
+                      NotificationService.showError(context, 'Please login first');
+                      return;
+                    }
+                    if (currentUser.id == userId) {
+                      NotificationService.showError(context, 'You cannot book a session with yourself');
+                      return;
+                    }
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => BookingFormSheet(
+                        mentorUid: userId,
+                        mentorName: user.fullName,
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: AppSpacing.xxl),
 

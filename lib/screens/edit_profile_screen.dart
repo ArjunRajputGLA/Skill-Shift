@@ -11,6 +11,7 @@ import '../widgets/custom_text_field.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/avatar_widget.dart';
 import '../widgets/custom_chip.dart';
+import '../widgets/duolingo_button.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../services/phone_auth_service.dart';
@@ -364,13 +365,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         const SizedBox(height: AppSpacing.md),
                         Align(
                           alignment: Alignment.centerRight,
-                          child: TextButton.icon(
-                            onPressed: _isLoading ? null : _verifyPhoneNumber,
-                            icon: const Icon(Icons.verified_user_outlined, size: 18),
-                            label: const Text('Verify Number'),
-                            style: TextButton.styleFrom(
-                              foregroundColor: AppColors.primary,
-                              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                          child: SizedBox(
+                            width: 180,
+                            child: DuolingoButton(
+                              title: 'Verify Number',
+                              icon: Icons.verified_user_outlined,
+                              color: AppColors.primary,
+                              loading: _isLoading,
+                              onPressed: _verifyPhoneNumber,
                             ),
                           ),
                         ),
@@ -382,9 +384,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.check_circle, color: AppColors.success, size: 16),
+                              const Icon(Icons.check_circle, color: AppColors.verifiedGreen, size: 16),
                               const SizedBox(width: 4),
-                              Text('Verified', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.success, fontWeight: FontWeight.bold)),
+                              Text('Verified', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.verifiedGreen, fontWeight: FontWeight.bold)),
                             ],
                           ),
                         ),

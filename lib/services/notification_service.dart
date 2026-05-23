@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../theme/app_colors.dart';
 
 class NotificationService {
   // ---------------------------------------------------------------------------
@@ -145,7 +146,7 @@ class NotificationService {
   }
 
   static void showSuccess(BuildContext context, String message) {
-    _showPopup(context, message, Colors.green.shade600, Icons.check_circle_outline);
+    _showPopup(context, message, AppColors.successGreen, Icons.check_circle_outline);
   }
 
   static void showError(BuildContext context, String message) {
@@ -160,22 +161,39 @@ class NotificationService {
     _showPopup(context, message, Colors.blue.shade600, Icons.info_outline);
   }
 
-  static void showLoading(BuildContext context) {
+  static void showLoading(BuildContext context, {String? message}) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return Center(
           child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
+            margin: const EdgeInsets.symmetric(horizontal: 40),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: const [
                 BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 4))
               ],
             ),
-            child: const CircularProgressIndicator(),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                if (message != null) ...[
+                  const SizedBox(width: 20),
+                  Flexible(
+                    child: Text(
+                      message,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         );
       },
@@ -183,9 +201,7 @@ class NotificationService {
   }
 
   static void hideLoading(BuildContext context) {
-    if (Navigator.of(context, rootNavigator: true).canPop()) {
-      Navigator.of(context, rootNavigator: true).pop();
-    }
+    Navigator.of(context, rootNavigator: true).pop();
   }
 
   static String getAuthErrorMessage(String code) {

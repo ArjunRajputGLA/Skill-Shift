@@ -4,6 +4,7 @@ import '../services/auth_service.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/gradient_background.dart';
+import '../widgets/video_background.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../services/notification_service.dart';
@@ -52,14 +53,16 @@ class _LoginScreenState extends State<LoginScreen>
       return;
     }
 
+    if (_isLoading) return;
     setState(() => _isLoading = true);
-    NotificationService.showLoading(context);
+    NotificationService.showLoading(context, message: "Authenticating, please wait...");
 
     final authService = Provider.of<AuthService>(context, listen: false);
+    final navigator = Navigator.of(context, rootNavigator: true);
     final error = await authService.signIn(email: email, password: password);
+    navigator.pop(); // Close dialog safely
 
     if (mounted) {
-      NotificationService.hideLoading(context);
       setState(() => _isLoading = false);
       if (error != null) {
         NotificationService.showError(context, error);
@@ -70,13 +73,16 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _loginWithGoogle() async {
+    if (_isGoogleLoading) return;
     setState(() => _isGoogleLoading = true);
-    NotificationService.showLoading(context);
+    NotificationService.showLoading(context, message: "Authenticating with Google, please be patient...");
 
-    final error = await GoogleAuthService().signInWithGoogle();
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final navigator = Navigator.of(context, rootNavigator: true);
+    final error = await authService.signInWithGoogle();
+    navigator.pop(); // Close dialog safely
 
     if (mounted) {
-      NotificationService.hideLoading(context);
       setState(() => _isGoogleLoading = false);
       if (error != null) {
         NotificationService.showError(context, error);
@@ -167,7 +173,7 @@ class _LoginScreenState extends State<LoginScreen>
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      body: GradientBackground(
+      body: VideoBackground(
         accentColor1: AppColors.primary,
         accentColor2: AppColors.primaryLight,
         child: SafeArea(
@@ -180,22 +186,6 @@ class _LoginScreenState extends State<LoginScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Logo area
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [AppColors.primary, AppColors.accent],
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.auto_awesome,
-                        size: 40,
-                        color: Colors.white,
-                      ),
-                    ),
                     const SizedBox(height: AppSpacing.xxl),
                     Text(
                       'Welcome to Skill Shift',

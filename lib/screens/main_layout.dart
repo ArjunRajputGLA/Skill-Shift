@@ -15,6 +15,7 @@ import 'chat_list_screen.dart';
 import 'profile_screen.dart';
 import 'notification_center_screen.dart';
 import '../services/notification_service.dart';
+import '../services/firebase_notification_service.dart';
 
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
@@ -26,6 +27,8 @@ class MainLayout extends StatefulWidget {
 class MainLayoutState extends State<MainLayout> {
   int _currentIndex = 0;
   late PageController pageController;
+  late final Stream<int> _unreadNotificationsStream;
+  late final Stream<QuerySnapshot> _unreadChatsStream;
 
   final List<Widget> _screens = [
     const HomeScreen(),
@@ -56,6 +59,21 @@ class MainLayoutState extends State<MainLayout> {
   void initState() {
     super.initState();
     pageController = PageController(initialPage: _currentIndex);
+    
+    _unreadNotificationsStream = NotificationService.getUnreadCountStream();
+    
+    final currentUser = context.read<AuthService>().currentUser;
+    _unreadChatsStream = currentUser == null 
+        ? const Stream.empty()
+        : FirebaseFirestore.instance
+            .collection('chats')
+            .where('unread_${currentUser.id}', isEqualTo: true)
+            .limit(1)
+            .snapshots();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FirebaseNotificationService().initialize();
+    });
   }
 
   @override
@@ -97,6 +115,7 @@ class MainLayoutState extends State<MainLayout> {
                 child: _FloatingHeader(
                   title: _titles[_currentIndex],
                   isDark: isDark,
+                  unreadNotificationsStream: _unreadNotificationsStream,
                   onAvatarTap: () => _onTabTapped(4),
                 ),
               ),
@@ -125,6 +144,7 @@ class MainLayoutState extends State<MainLayout> {
           child: _FloatingGlassNav(
             currentIndex: _currentIndex,
             isDark: isDark,
+            unreadChatsStream: _unreadChatsStream,
             onTap: _onTabTapped,
           ),
         ),
@@ -136,11 +156,13 @@ class MainLayoutState extends State<MainLayout> {
 class _FloatingHeader extends StatelessWidget {
   final String title;
   final bool isDark;
+  final Stream<int> unreadNotificationsStream;
   final VoidCallback onAvatarTap;
 
   const _FloatingHeader({
     required this.title,
     required this.isDark,
+    required this.unreadNotificationsStream,
     required this.onAvatarTap,
   });
 
@@ -236,7 +258,7 @@ class _FloatingHeader extends StatelessWidget {
                 constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
               ),
               StreamBuilder<int>(
-                stream: NotificationService.getUnreadCountStream(),
+                stream: unreadNotificationsStream,
                 builder: (context, snapshot) {
                   final unreadCount = snapshot.data ?? 0;
                   return Stack(
@@ -261,7 +283,7 @@ class _FloatingHeader extends StatelessWidget {
                           child: Container(
                             padding: const EdgeInsets.all(4),
                             decoration: const BoxDecoration(
-                              color: Colors.redAccent,
+                              color: AppColors.accentGreen,
                               shape: BoxShape.circle,
                             ),
                             child: Text(
@@ -297,11 +319,13 @@ class _FloatingHeader extends StatelessWidget {
 class _FloatingGlassNav extends StatelessWidget {
   final int currentIndex;
   final bool isDark;
+  final Stream<QuerySnapshot> unreadChatsStream;
   final Function(int) onTap;
 
   const _FloatingGlassNav({
     required this.currentIndex,
     required this.isDark,
+    required this.unreadChatsStream,
     required this.onTap,
   });
 
@@ -353,13 +377,7 @@ class _FloatingGlassNav extends StatelessWidget {
                 onTap: () => onTap(2),
               ),
               StreamBuilder<QuerySnapshot>(
-                stream: context.read<AuthService>().currentUser == null 
-                  ? const Stream.empty()
-                  : FirebaseFirestore.instance
-                      .collection('chats')
-                      .where('unread_${context.read<AuthService>().currentUser!.id}', isEqualTo: true)
-                      .limit(1)
-                      .snapshots(),
+                stream: unreadChatsStream,
                 builder: (context, snapshot) {
                   bool hasUnread = snapshot.hasData && snapshot.data!.docs.isNotEmpty;
                   return _NavItem(
@@ -476,7 +494,7 @@ class _NavItemState extends State<_NavItem> with SingleTickerProviderStateMixin 
                     width: 10,
                     height: 10,
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.error,
+                      color: AppColors.accentGreen,
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: theme.colorScheme.surface,

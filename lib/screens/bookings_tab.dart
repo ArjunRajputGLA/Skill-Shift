@@ -9,6 +9,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/endorsement_dialog.dart';
+import '../widgets/duolingo_button.dart';
 
 class BookingsTab extends StatelessWidget {
   const BookingsTab({super.key});
@@ -224,23 +225,27 @@ class _BookingCard extends StatelessWidget {
             },
             child: const Text('No, it was missed', style: TextStyle(color: Colors.red)),
           ),
-          FilledButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await BookingService().confirmSessionCompletion(bookingId, isMentor);
-              if (ctx.mounted && !isMentor) {
-                // Unlock endorsements for student
-                showModalBottomSheet(
-                  context: ctx,
-                  builder: (_) => EndorsementDialog(
-                    sessionId: bookingId,
-                    mentorUid: booking.mentorUid,
-                    mentorName: 'Mentor', // Ideally fetched
-                  ),
-                );
-              }
-            },
-            child: const Text('Yes, it happened'),
+          SizedBox(
+            width: 160,
+            child: DuolingoButton(
+              title: 'Yes, it happened',
+              color: AppColors.successGreen,
+              onPressed: () async {
+                Navigator.pop(ctx);
+                await BookingService().confirmSessionCompletion(bookingId, isMentor);
+                if (ctx.mounted && !isMentor) {
+                  // Unlock endorsements for student
+                  showModalBottomSheet(
+                    context: ctx,
+                    builder: (_) => EndorsementDialog(
+                      sessionId: bookingId,
+                      mentorUid: booking.mentorUid,
+                      mentorName: 'Mentor', // Ideally fetched
+                    ),
+                  );
+                }
+              },
+            ),
           ),
         ],
       ),
@@ -306,12 +311,13 @@ class _BookingCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: FilledButton(
+                  child: DuolingoButton(
+                    title: 'Accept',
+                    color: AppColors.successGreen,
                     onPressed: () async {
                       final name = context.read<AuthService>().currentUser?.fullName ?? 'Mentor';
                       await BookingService().acceptBooking(booking, name);
                     },
-                    child: const Text('Accept'),
                   ),
                 ),
               ],
@@ -335,12 +341,16 @@ class _BookingCard extends StatelessWidget {
                   },
                   child: const Text('Decline', style: TextStyle(color: Colors.red)),
                 ),
-                FilledButton(
-                  onPressed: () async {
-                    final name = context.read<AuthService>().currentUser?.fullName ?? 'Student';
-                    await BookingService().studentAcceptNewTime(booking, 'Mentor'); // Mentor name would ideally be fetched
-                  },
-                  child: const Text('Accept New Time'),
+                SizedBox(
+                  width: 160,
+                  child: DuolingoButton(
+                    title: 'Accept New Time',
+                    color: AppColors.successGreen,
+                    onPressed: () async {
+                      final name = context.read<AuthService>().currentUser?.fullName ?? 'Student';
+                      await BookingService().studentAcceptNewTime(booking, 'Mentor'); // Mentor name would ideally be fetched
+                    },
+                  ),
                 ),
               ],
             ),
@@ -358,18 +368,22 @@ class _BookingCard extends StatelessWidget {
                     },
                     child: const Text('Mark Present'),
                   ),
-                FilledButton(
-                  onPressed: () {
-                    final hasConfirmed = isMentor ? booking.mentorConfirmed : booking.studentConfirmed;
-                    if (hasConfirmed) {
-                      NotificationService.showSuccess(context, 'You have already confirmed this session.');
-                      return;
-                    }
-                    _showCompletionDialog(context, booking.id, isMentor);
-                  },
-                  child: Text(isMentor 
-                    ? (booking.mentorConfirmed ? 'Confirmed' : 'Confirm Done') 
-                    : (booking.studentConfirmed ? 'Confirmed' : 'Confirm Done')),
+                SizedBox(
+                  width: 160,
+                  child: DuolingoButton(
+                    title: isMentor 
+                      ? (booking.mentorConfirmed ? 'Confirmed' : 'Confirm Done') 
+                      : (booking.studentConfirmed ? 'Confirmed' : 'Confirm Done'),
+                    color: AppColors.primary,
+                    onPressed: () {
+                      final hasConfirmed = isMentor ? booking.mentorConfirmed : booking.studentConfirmed;
+                      if (hasConfirmed) {
+                        NotificationService.showSuccess(context, 'You have already confirmed this session.');
+                        return;
+                      }
+                      _showCompletionDialog(context, booking.id, isMentor);
+                    },
+                  ),
                 ),
               ],
             ),

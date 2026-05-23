@@ -14,6 +14,13 @@ class AppColors {
   static const Color warning = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
 
+  // === SEMANTIC GREEN ACCENTS ===
+  static const Color successGreen = Color(0xFF1ED760); // Spotify energy
+  static const Color onlineGreen = Color(0xFF22C55E); // Muted
+  static const Color verifiedGreen = Color(0xFF4ADE80); // Soft
+  static const Color progressGreen = Color(0xFF1ED760); // Energy
+  static const Color accentGreen = Color(0xFF4ADE80); // Soft accent
+
   // === LIGHT THEME ===
   static const Color lightBackground = Color(0xFFF8FAFC); // Cool, ultra-clean slate
   static const Color lightSurface = Color(0xFFFFFFFF);

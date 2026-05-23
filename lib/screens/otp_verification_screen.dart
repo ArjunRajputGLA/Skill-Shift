@@ -9,6 +9,7 @@ import '../widgets/custom_button.dart';
 import '../widgets/otp_input_widget.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
+import '../widgets/duolingo_button.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String phoneNumber;
@@ -222,9 +223,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                       },
                     ),
                     const SizedBox(height: AppSpacing.xxl),
-                    CustomButton(
-                      label: 'Verify OTP',
-                      isLoading: _isLoading,
+                    DuolingoButton(
+                      title: 'Verify OTP',
+                      color: AppColors.primary,
+                      loading: _isLoading,
                       onPressed: _verifyOtp,
                     ),
                   ],

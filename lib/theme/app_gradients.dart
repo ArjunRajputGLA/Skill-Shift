@@ -142,6 +142,26 @@ class AppGradients {
     ],
   );
 
+  /// Success green gradient for progress and completion states.
+  static const LinearGradient successGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      AppColors.successGreen,
+      AppColors.verifiedGreen,
+    ],
+  );
+
+  /// Verified glow for badges and achievement cards.
+  static RadialGradient verifiedGlow({required bool isDark}) {
+    return RadialGradient(
+      colors: [
+        AppColors.verifiedGreen.withValues(alpha: isDark ? 0.25 : 0.15),
+        AppColors.verifiedGreen.withValues(alpha: 0.0),
+      ],
+    );
+  }
+
   /// Shimmer gradient for loading skeleton animations.
   static LinearGradient shimmerGradient({required bool isDark}) {
     return LinearGradient(
