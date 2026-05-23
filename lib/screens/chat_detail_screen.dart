@@ -595,6 +595,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           ),
         ],
       ),
+        ],
+      ),
     );
   }
 }
