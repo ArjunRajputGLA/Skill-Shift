@@ -269,9 +269,9 @@ class _CreatePostTabState extends State<_CreatePostTab> {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final dynamicBottomPadding = bottomInset > 0 ? AppSpacing.md : AppSpacing.navClearance;
 
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
-
-    return SingleChildScrollView(
+    return Stack(
+      children: [
+        SingleChildScrollView(
       padding: EdgeInsets.only(
         left: AppSpacing.lg,
         right: AppSpacing.lg,
@@ -344,13 +344,23 @@ class _CreatePostTabState extends State<_CreatePostTab> {
             SizedBox(
               height: 52,
               child: FilledButton(
-                onPressed: _submitPost,
-                child: const Text('Post to Feed', style: TextStyle(fontSize: 16)),
+                onPressed: _isLoading ? null : _submitPost,
+                child: _isLoading 
+                    ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('Post to Feed', style: TextStyle(fontSize: 16)),
               ),
             ),
           ],
         ),
       ),
+    ),
+    if (_isLoading)
+      Positioned.fill(
+        child: Container(
+          color: theme.scaffoldBackgroundColor.withValues(alpha: 0.5),
+        ),
+      ),
+    ],
     );
   }
 }

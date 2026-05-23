@@ -298,17 +298,19 @@ class _PersonalProfileTabState extends State<_PersonalProfileTab> {
             ],
 
             // Skills & Interests
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (user.skills.isNotEmpty)
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSectionTitle('Can Teach', theme),
-                        const SizedBox(height: AppSpacing.md),
-                        Wrap(
+            if (user.skills.isNotEmpty) ...[
+              GlassCard(
+                animate: true,
+                padding: EdgeInsets.zero,
+                child: Theme(
+                  data: theme.copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    title: Text('Can Teach', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                    childrenPadding: const EdgeInsets.only(left: AppSpacing.lg, right: AppSpacing.lg, bottom: AppSpacing.lg),
+                    children: [
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Wrap(
                           spacing: AppSpacing.sm,
                           runSpacing: AppSpacing.sm,
                           children: user.skills.map((skill) => CustomChip(
@@ -316,19 +318,26 @@ class _PersonalProfileTabState extends State<_PersonalProfileTab> {
                             variant: ChipVariant.accent,
                           )).toList(),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                if (user.skills.isNotEmpty && user.interests.isNotEmpty)
-                  const SizedBox(width: AppSpacing.xl),
-                if (user.interests.isNotEmpty)
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSectionTitle('Wants to Learn', theme),
-                        const SizedBox(height: AppSpacing.md),
-                        Wrap(
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xxl),
+            ],
+            if (user.interests.isNotEmpty) ...[
+              GlassCard(
+                animate: true,
+                padding: EdgeInsets.zero,
+                child: Theme(
+                  data: theme.copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    title: Text('Wants to Learn', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                    childrenPadding: const EdgeInsets.only(left: AppSpacing.lg, right: AppSpacing.lg, bottom: AppSpacing.lg),
+                    children: [
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Wrap(
                           spacing: AppSpacing.sm,
                           runSpacing: AppSpacing.sm,
                           children: user.interests.map((interest) => CustomChip(
@@ -336,12 +345,13 @@ class _PersonalProfileTabState extends State<_PersonalProfileTab> {
                             variant: ChipVariant.outlined,
                           )).toList(),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xxl),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xxl),
+            ],
 
             // Contact
             _buildSectionTitle('Contact', theme),

@@ -39,11 +39,35 @@ class AuthService extends ChangeNotifier {
       if (doc.exists && doc.data() != null) {
         _currentUser = UserModel.fromMap(doc.data()!, doc.id);
       } else {
-        _createFallbackUser(uid);
+        if (_currentUser == null) _createFallbackUser(uid);
       }
     } catch (e) {
       debugPrint('Error fetching user profile: $e');
-      _createFallbackUser(uid);
+      if (_currentUser == null) {
+        _createFallbackUser(uid);
+      }
+      // If it failed due to timeout, try to recover it silently in the background
+      _retryFetchUserProfile(uid);
+    }
+  }
+
+  void _retryFetchUserProfile(String uid) async {
+    int attempts = 0;
+    while (attempts < 3) {
+      await Future.delayed(const Duration(seconds: 5));
+      try {
+        // No timeout here, let it wait for the gRPC connection to establish
+        final doc = await _firestore.collection('users').doc(uid).get();
+        if (doc.exists && doc.data() != null) {
+          _currentUser = UserModel.fromMap(doc.data()!, doc.id);
+          notifyListeners();
+          debugPrint("Successfully recovered user profile in background!");
+          break;
+        }
+      } catch (e) {
+        debugPrint("Background retry failed: $e");
+      }
+      attempts++;
     }
   }
 

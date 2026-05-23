@@ -170,53 +170,95 @@ class PublicProfileScreen extends StatelessWidget {
 
                 // Skills
                 if (user.skills.isNotEmpty) ...[
-                  _buildSectionTitle('💡 Skill Reputation', theme),
-                  const SizedBox(height: AppSpacing.md),
-                  Wrap(
-                    spacing: AppSpacing.sm,
-                    runSpacing: AppSpacing.sm,
-                    children: user.skills.map((skill) {
-                      final isVerified = user.verifiedSkills[skill] == true;
-                      final count = user.skillEndorsements[skill] ?? 0;
-                      return CustomChip(
-                        label: '$skill ×$count',
-                        variant: ChipVariant.accent,
-                        isVerified: isVerified,
-                      );
-                    }).toList(),
+                  GlassCard(
+                    animate: true,
+                    padding: EdgeInsets.zero,
+                    child: Theme(
+                      data: theme.copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        title: Text('💡 Skill Reputation', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                        childrenPadding: const EdgeInsets.only(left: AppSpacing.lg, right: AppSpacing.lg, bottom: AppSpacing.lg),
+                        children: [
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Wrap(
+                              spacing: AppSpacing.sm,
+                              runSpacing: AppSpacing.sm,
+                              children: user.skills.map((skill) {
+                                final isVerified = user.verifiedSkills[skill] == true;
+                                final count = user.skillEndorsements[skill] ?? 0;
+                                return CustomChip(
+                                  label: '$skill ×$count',
+                                  variant: ChipVariant.accent,
+                                  isVerified: isVerified,
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.xxl),
                 ],
 
                 // Endorsements (Tags)
                 if (user.tagEndorsements.isNotEmpty) ...[
-                  _buildSectionTitle('🏆 Endorsements', theme),
-                  const SizedBox(height: AppSpacing.md),
-                  Wrap(
-                    spacing: AppSpacing.sm,
-                    runSpacing: AppSpacing.sm,
-                    children: user.tagEndorsements.entries.map((entry) {
-                      return CustomChip(
-                        label: '${entry.key} ×${entry.value}',
-                        variant: ChipVariant.filled,
-                        isVerified: true, // Always show star for tag endorsements
-                      );
-                    }).toList(),
+                  GlassCard(
+                    animate: true,
+                    padding: EdgeInsets.zero,
+                    child: Theme(
+                      data: theme.copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        title: Text('🏆 Endorsements', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                        childrenPadding: const EdgeInsets.only(left: AppSpacing.lg, right: AppSpacing.lg, bottom: AppSpacing.lg),
+                        children: [
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Wrap(
+                              spacing: AppSpacing.sm,
+                              runSpacing: AppSpacing.sm,
+                              children: user.tagEndorsements.entries.map((entry) {
+                                return CustomChip(
+                                  label: '${entry.key} ×${entry.value}',
+                                  variant: ChipVariant.filled,
+                                  isVerified: true, // Always show star for tag endorsements
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.xxl),
                 ],
 
                 // Interests
                 if (user.interests.isNotEmpty) ...[
-                  _buildSectionTitle('Interests', theme),
-                  const SizedBox(height: AppSpacing.md),
-                  Wrap(
-                    spacing: AppSpacing.sm,
-                    runSpacing: AppSpacing.sm,
-                    children: user.interests.map((interest) => CustomChip(
-                      label: interest,
-                      variant: ChipVariant.outlined,
-                    )).toList(),
+                  GlassCard(
+                    animate: true,
+                    padding: EdgeInsets.zero,
+                    child: Theme(
+                      data: theme.copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        title: Text('Interests', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                        childrenPadding: const EdgeInsets.only(left: AppSpacing.lg, right: AppSpacing.lg, bottom: AppSpacing.lg),
+                        children: [
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Wrap(
+                              spacing: AppSpacing.sm,
+                              runSpacing: AppSpacing.sm,
+                              children: user.interests.map((interest) => CustomChip(
+                                label: interest,
+                                variant: ChipVariant.outlined,
+                              )).toList(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.xxl),
                 ],

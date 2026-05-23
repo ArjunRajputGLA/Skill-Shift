@@ -144,6 +144,7 @@ class _CustomChipState extends State<CustomChip>
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutCubic,
+          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width - 64),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
             color: widget.isVerified ? AppColors.verifiedGreen.withValues(alpha: 0.15) : _backgroundColor(isDark),
@@ -159,14 +160,16 @@ class _CustomChipState extends State<CustomChip>
                 Icon(widget.icon, size: 16, color: fg),
                 const SizedBox(width: 6),
               ],
-              Text(
-                widget.label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight:
-                      (widget.isSelected || widget.isVerified) ? FontWeight.w600 : FontWeight.w500,
-                  color: widget.isVerified ? AppColors.verifiedGreen : fg,
-                  height: 1.2,
+              Flexible(
+                child: Text(
+                  widget.label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight:
+                        (widget.isSelected || widget.isVerified) ? FontWeight.w600 : FontWeight.w500,
+                    color: widget.isVerified ? AppColors.verifiedGreen : fg,
+                    height: 1.2,
+                  ),
                 ),
               ),
               if (widget.isVerified) ...[
