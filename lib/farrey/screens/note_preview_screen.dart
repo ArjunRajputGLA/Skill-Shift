@@ -335,7 +335,7 @@ class _NotePreviewScreenState extends State<NotePreviewScreen> {
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: context.farreySurface.withValues(alpha: context.isDark ? 0.7 : 0.8),
                         borderRadius: BorderRadius.circular(30),
@@ -349,8 +349,11 @@ class _NotePreviewScreenState extends State<NotePreviewScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            icon: Icon(Icons.arrow_back_rounded, color: context.farreyTextPrimary),
+                            icon: Icon(Icons.arrow_back_rounded, color: context.farreyTextPrimary, size: 20),
                             onPressed: () => Navigator.pop(context),
+                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                            padding: EdgeInsets.zero,
+                            splashRadius: 20,
                           ),
                           Container(
                             constraints: const BoxConstraints(maxWidth: 120),
@@ -367,12 +370,18 @@ class _NotePreviewScreenState extends State<NotePreviewScreen> {
                           ),
                           IconButton(
                             icon: Icon(_isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded, 
-                              color: _isSaved ? context.farreyPrimary : context.farreyTextSecondary),
+                              color: _isSaved ? context.farreyPrimary : context.farreyTextSecondary, size: 20),
                             onPressed: _toggleSave,
+                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                            padding: EdgeInsets.zero,
+                            splashRadius: 20,
                           ),
                           IconButton(
-                            icon: Icon(Icons.star_rounded, color: context.farreyWarning),
+                            icon: Icon(Icons.star_rounded, color: context.farreyWarning, size: 20),
                             onPressed: _showRatingDialog,
+                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                            padding: EdgeInsets.zero,
+                            splashRadius: 20,
                           ),
                         ],
                       ),

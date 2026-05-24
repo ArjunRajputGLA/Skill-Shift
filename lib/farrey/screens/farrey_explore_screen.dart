@@ -107,7 +107,7 @@ class _FarreyExploreScreenState extends State<FarreyExploreScreen> {
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       decoration: BoxDecoration(
                         color: context.farreySurface.withValues(alpha: context.isDark ? 0.7 : 0.8),
                         borderRadius: BorderRadius.circular(30),
@@ -120,25 +120,26 @@ class _FarreyExploreScreenState extends State<FarreyExploreScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.search_rounded, color: context.farreyTextSecondary),
+                          Icon(Icons.search_rounded, color: context.farreyTextSecondary, size: 20),
                           const SizedBox(width: 8),
                           SizedBox(
                             width: 180,
                             child: TextField(
                               controller: _searchController,
-                              style: TextStyle(color: context.farreyTextPrimary),
+                              style: TextStyle(color: context.farreyTextPrimary, fontSize: 14),
                               decoration: InputDecoration(
                                 hintText: 'Search notes, subjects...',
-                                hintStyle: TextStyle(color: context.farreyTextSecondary),
+                                hintStyle: TextStyle(color: context.farreyTextSecondary, fontSize: 14),
                                 border: InputBorder.none,
                                 isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(vertical: 8),
                               ),
                               onChanged: _performSearch,
                             ),
                           ),
                           if (_searchController.text.isNotEmpty)
                             IconButton(
-                              icon: Icon(Icons.close_rounded, color: context.farreyTextSecondary, size: 20),
+                              icon: Icon(Icons.close_rounded, color: context.farreyTextSecondary, size: 18),
                               onPressed: () {
                                 _searchController.clear();
                                 _performSearch('');
@@ -158,12 +159,13 @@ class _FarreyExploreScreenState extends State<FarreyExploreScreen> {
                               icon: Icon(
                                 context.isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
                                 color: context.farreySecondary,
+                                size: 18,
                               ),
                               onPressed: () {
                                 context.read<ThemeProvider>().toggleTheme();
                               },
                               splashRadius: 20,
-                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                               padding: EdgeInsets.zero,
                             ),
                           ),

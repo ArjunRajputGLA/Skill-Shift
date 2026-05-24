@@ -147,7 +147,7 @@ class FarreySavedScreen extends StatelessWidget {
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                       decoration: BoxDecoration(
                         color: context.farreySurface.withValues(alpha: context.isDark ? 0.7 : 0.8),
                         borderRadius: BorderRadius.circular(30),
@@ -165,7 +165,7 @@ class FarreySavedScreen extends StatelessWidget {
                             style: TextStyle(
                               color: context.farreyTextPrimary,
                               fontWeight: FontWeight.w900,
-                              fontSize: 18,
+                              fontSize: 16,
                               letterSpacing: -0.5,
                             ),
                           ),
@@ -179,12 +179,13 @@ class FarreySavedScreen extends StatelessWidget {
                               icon: Icon(
                                 context.isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
                                 color: context.farreySecondary,
+                                size: 18,
                               ),
                               onPressed: () {
                                 context.read<ThemeProvider>().toggleTheme();
                               },
                               splashRadius: 20,
-                              constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                               padding: EdgeInsets.zero,
                             ),
                           ),
