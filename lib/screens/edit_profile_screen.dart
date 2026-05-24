@@ -38,6 +38,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late List<String> _skills;
   late List<String> _interests;
 
+  String _selectedRole = 'Bachelor\'s Student';
+  final List<String> _roles = [
+    'Bachelor\'s Student',
+    'Master\'s Student',
+    'PhD Student',
+    'Professional',
+    'Other'
+  ];
+
+  late TextEditingController _specializationController;
+  late TextEditingController _researchAreaController;
+  late TextEditingController _organizationController;
+  late TextEditingController _designationController;
+  late TextEditingController _experienceController;
+
   final TextEditingController _skillController = TextEditingController();
   final TextEditingController _interestController = TextEditingController();
 
@@ -58,6 +73,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _bioController = TextEditingController(text: user?.bio ?? '');
     _whatsappController = TextEditingController(text: user?.whatsapp ?? '');
     
+    _selectedRole = user?.userType ?? 'Bachelor\'s Student';
+    if (!_roles.contains(_selectedRole)) _selectedRole = 'Bachelor\'s Student';
+    
+    _specializationController = TextEditingController(text: user?.specialization ?? '');
+    _researchAreaController = TextEditingController(text: user?.researchArea ?? '');
+    _organizationController = TextEditingController(text: user?.organization ?? '');
+    _designationController = TextEditingController(text: user?.designation ?? '');
+    _experienceController = TextEditingController(text: user?.experience ?? '');
+    
     _skills = List<String>.from(user?.skills ?? []);
     _interests = List<String>.from(user?.interests ?? []);
     _profileImageBase64 = user?.profileImageBase64;
@@ -73,6 +97,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _yearController.dispose();
     _bioController.dispose();
     _whatsappController.dispose();
+    _specializationController.dispose();
+    _researchAreaController.dispose();
+    _organizationController.dispose();
+    _designationController.dispose();
+    _experienceController.dispose();
     _skillController.dispose();
     _interestController.dispose();
     super.dispose();
@@ -278,6 +307,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       branch: _branchController.text.trim(),
       year: _yearController.text.trim(),
       bio: _bioController.text.trim(),
+      userType: _selectedRole,
+      specialization: _specializationController.text.trim(),
+      researchArea: _researchAreaController.text.trim(),
+      organization: _organizationController.text.trim(),
+      designation: _designationController.text.trim(),
+      experience: _experienceController.text.trim(),
       whatsapp: _originalWhatsApp,
       whatsappVerified: _isWhatsAppVerified,
       verifiedAt: currentUser.verifiedAt, // Preserve verifiedAt if unchanged
@@ -419,34 +454,159 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: Text('Education', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                  child: Text('Academic / Professional Background', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 GlassCard(
                   child: Column(
                     children: [
-                      CustomTextField(
-                        label: 'College/University',
-                        controller: _collegeNameController,
+                      // Role Selection
+                      DropdownButtonFormField<String>(
+                        value: _selectedRole,
+                        dropdownColor: isDark ? AppColors.darkSurface : Colors.white,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                        decoration: InputDecoration(
+                          labelText: 'I am a...',
+                          prefixIcon: const Icon(Icons.person_outline),
+                          filled: true,
+                          fillColor: isDark ? AppColors.darkSurfaceElevated : AppColors.lightSurfaceElevated,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        items: _roles.map((role) {
+                          return DropdownMenuItem(
+                            value: role,
+                            child: Text(role),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() => _selectedRole = value);
+                          }
+                        },
                       ),
                       const SizedBox(height: AppSpacing.lg),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: CustomTextField(
-                              label: 'Branch/Major',
-                              controller: _branchController,
+
+                      // Dynamic Fields
+                      if (_selectedRole == 'Bachelor\'s Student') ...[
+                        CustomTextField(
+                          controller: _collegeNameController,
+                          label: 'College Name',
+                          hint: 'e.g. GLA University',
+                          prefixIcon: const Icon(Icons.school_outlined),
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CustomTextField(
+                                controller: _branchController,
+                                label: 'Branch',
+                                hint: 'e.g. CSE',
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: AppSpacing.lg),
-                          Expanded(
-                            child: CustomTextField(
-                              label: 'Year',
-                              controller: _yearController,
+                            const SizedBox(width: AppSpacing.lg),
+                            Expanded(
+                              child: CustomTextField(
+                                controller: _yearController,
+                                label: 'Year',
+                                hint: 'e.g. 3rd Year',
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
+                      ],
+
+                      if (_selectedRole == 'Master\'s Student') ...[
+                        CustomTextField(
+                          controller: _collegeNameController,
+                          label: 'College/University Name',
+                          hint: 'e.g. GLA University',
+                          prefixIcon: const Icon(Icons.school_outlined),
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CustomTextField(
+                                controller: _specializationController,
+                                label: 'Specialization',
+                                hint: 'e.g. AI & ML',
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.lg),
+                            Expanded(
+                              child: CustomTextField(
+                                controller: _yearController,
+                                label: 'Year',
+                                hint: 'e.g. 1st Year',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+
+                      if (_selectedRole == 'PhD Student') ...[
+                        CustomTextField(
+                          controller: _collegeNameController,
+                          label: 'University Name',
+                          hint: 'e.g. GLA University',
+                          prefixIcon: const Icon(Icons.school_outlined),
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CustomTextField(
+                                controller: _researchAreaController,
+                                label: 'Research Area',
+                                hint: 'e.g. Quantum Computing',
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.lg),
+                            Expanded(
+                              child: CustomTextField(
+                                controller: _yearController,
+                                label: 'Year of Study',
+                                hint: 'e.g. 2nd Year',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+
+                      if (_selectedRole == 'Professional' || _selectedRole == 'Other') ...[
+                        CustomTextField(
+                          controller: _organizationController,
+                          label: 'Organization / Company',
+                          hint: 'e.g. Google',
+                          prefixIcon: const Icon(Icons.business_outlined),
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CustomTextField(
+                                controller: _designationController,
+                                label: 'Role / Designation',
+                                hint: 'e.g. Software Engineer',
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.lg),
+                            Expanded(
+                              child: CustomTextField(
+                                controller: _experienceController,
+                                label: 'Experience',
+                                hint: 'e.g. 3 Years',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),

@@ -11,6 +11,15 @@ class UserModel {
   final List<String> interests;
   final String bio;
   final String whatsapp;
+  
+  // Dynamic Role Fields
+  final String userType;
+  final String specialization;
+  final String researchArea;
+  final String organization;
+  final String designation;
+  final String experience;
+  
   final bool whatsappVerified;
   final DateTime? verifiedAt;
   final bool notificationsEnabled;
@@ -37,6 +46,12 @@ class UserModel {
     this.interests = const [],
     this.bio = '',
     this.whatsapp = '',
+    this.userType = 'Bachelor\'s Student',
+    this.specialization = '',
+    this.researchArea = '',
+    this.organization = '',
+    this.designation = '',
+    this.experience = '',
     this.whatsappVerified = false,
     this.verifiedAt,
     this.notificationsEnabled = true,
@@ -65,6 +80,12 @@ class UserModel {
       'interests': interests,
       'bio': bio,
       'whatsapp': whatsapp,
+      'userType': userType,
+      'specialization': specialization,
+      'researchArea': researchArea,
+      'organization': organization,
+      'designation': designation,
+      'experience': experience,
       'whatsappVerified': whatsappVerified,
       'verifiedAt': verifiedAt != null ? Timestamp.fromDate(verifiedAt!) : null,
       'notificationsEnabled': notificationsEnabled,
@@ -94,6 +115,12 @@ class UserModel {
       interests: List<String>.from(map['interests'] ?? []),
       bio: map['bio'] ?? '',
       whatsapp: map['whatsapp'] ?? '',
+      userType: map['userType'] ?? 'Bachelor\'s Student',
+      specialization: map['specialization'] ?? '',
+      researchArea: map['researchArea'] ?? '',
+      organization: map['organization'] ?? '',
+      designation: map['designation'] ?? '',
+      experience: map['experience'] ?? '',
       whatsappVerified: map['whatsappVerified'] ?? false,
       verifiedAt: map['verifiedAt'] != null
           ? (map['verifiedAt'] as Timestamp).toDate()

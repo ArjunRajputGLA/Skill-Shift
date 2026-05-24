@@ -43,6 +43,15 @@ class _SignupScreenState extends State<SignupScreen>
     _fadeController.forward();
   }
 
+  bool _isEmailValid(String email) {
+    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+  }
+
+  bool _isPasswordStrong(String password) {
+    // Minimum 8 characters, at least one uppercase, one lowercase, one number and one special character
+    return RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$').hasMatch(password);
+  }
+
   // ALL backend logic preserved exactly
   void _signup() async {
     final name = _nameController.text.trim();
@@ -51,6 +60,19 @@ class _SignupScreenState extends State<SignupScreen>
 
     if (name.isEmpty || email.isEmpty || password.isEmpty) {
       NotificationService.showWarning(context, "Please fill all fields");
+      return;
+    }
+
+    if (!_isEmailValid(email)) {
+      NotificationService.showWarning(context, "Please enter a valid email format");
+      return;
+    }
+
+    if (!_isPasswordStrong(password)) {
+      NotificationService.showWarning(
+        context, 
+        "Password must be at least 8 chars long and contain an uppercase, lowercase, number, and special character."
+      );
       return;
     }
 

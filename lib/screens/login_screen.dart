@@ -43,6 +43,10 @@ class _LoginScreenState extends State<LoginScreen>
     _fadeController.forward();
   }
 
+  bool _isEmailValid(String email) {
+    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+  }
+
   // ALL backend logic preserved exactly
   void _login() async {
     final email = _emailController.text.trim();
@@ -50,6 +54,11 @@ class _LoginScreenState extends State<LoginScreen>
 
     if (email.isEmpty || password.isEmpty) {
       NotificationService.showWarning(context, "Please enter email and password");
+      return;
+    }
+
+    if (!_isEmailValid(email)) {
+      NotificationService.showWarning(context, "Please enter a valid email format");
       return;
     }
 

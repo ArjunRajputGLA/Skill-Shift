@@ -28,6 +28,21 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final _bioController = TextEditingController();
   final _whatsappController = TextEditingController();
 
+  String _selectedRole = 'Bachelor\'s Student';
+  final List<String> _roles = [
+    'Bachelor\'s Student',
+    'Master\'s Student',
+    'PhD Student',
+    'Professional',
+    'Other'
+  ];
+
+  final _specializationController = TextEditingController();
+  final _researchAreaController = TextEditingController();
+  final _organizationController = TextEditingController();
+  final _designationController = TextEditingController();
+  final _experienceController = TextEditingController();
+
   bool _isLoading = false;
 
   @override
@@ -39,6 +54,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     _interestsController.dispose();
     _bioController.dispose();
     _whatsappController.dispose();
+    _specializationController.dispose();
+    _researchAreaController.dispose();
+    _organizationController.dispose();
+    _designationController.dispose();
+    _experienceController.dispose();
     super.dispose();
   }
 
@@ -94,9 +114,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       id: currentUser.id,
       fullName: currentUser.fullName,
       email: currentUser.email,
+      userType: _selectedRole,
       collegeName: _collegeController.text.trim(),
       branch: _branchController.text.trim(),
       year: _yearController.text.trim(),
+      specialization: _specializationController.text.trim(),
+      researchArea: _researchAreaController.text.trim(),
+      organization: _organizationController.text.trim(),
+      designation: _designationController.text.trim(),
+      experience: _experienceController.text.trim(),
       skills: skillsList,
       interests: interestsList,
       bio: _bioController.text.trim(),
@@ -124,9 +150,12 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('Setup Your Profile'),
         automaticallyImplyLeading: false,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -153,36 +182,165 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   ),
                   const SizedBox(height: AppSpacing.xxl),
                   
-                  // College Information
-                  CustomTextField(
-                    controller: _collegeController,
-                    label: 'College Name',
-                    hint: 'e.g. GLA University',
-                    prefixIcon: const Icon(Icons.school_outlined),
-                    validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                  // Role Selection
+                  DropdownButtonFormField<String>(
+                    value: _selectedRole,
+                    dropdownColor: isDark ? AppColors.darkSurface : Colors.white,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: 'I am a...',
+                      prefixIcon: const Icon(Icons.person_outline),
+                      filled: true,
+                      fillColor: isDark ? AppColors.darkSurfaceElevated : AppColors.lightSurfaceElevated,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    items: _roles.map((role) {
+                      return DropdownMenuItem(
+                        value: role,
+                        child: Text(role),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() => _selectedRole = value);
+                      }
+                    },
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: CustomTextField(
-                          controller: _branchController,
-                          label: 'Branch',
-                          hint: 'e.g. CSE',
-                          validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+
+                  // Dynamic Fields
+                  if (_selectedRole == 'Bachelor\'s Student') ...[
+                    CustomTextField(
+                      controller: _collegeController,
+                      label: 'College Name',
+                      hint: 'e.g. GLA University',
+                      prefixIcon: const Icon(Icons.school_outlined),
+                      validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomTextField(
+                            controller: _branchController,
+                            label: 'Branch',
+                            hint: 'e.g. CSE',
+                            validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: AppSpacing.lg),
-                      Expanded(
-                        child: CustomTextField(
-                          controller: _yearController,
-                          label: 'Year',
-                          hint: 'e.g. 3rd Year',
-                          validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                        const SizedBox(width: AppSpacing.lg),
+                        Expanded(
+                          child: CustomTextField(
+                            controller: _yearController,
+                            label: 'Year',
+                            hint: 'e.g. 3rd Year',
+                            validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
+
+                  if (_selectedRole == 'Master\'s Student') ...[
+                    CustomTextField(
+                      controller: _collegeController,
+                      label: 'College/University Name',
+                      hint: 'e.g. GLA University',
+                      prefixIcon: const Icon(Icons.school_outlined),
+                      validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomTextField(
+                            controller: _specializationController,
+                            label: 'Specialization',
+                            hint: 'e.g. AI & ML',
+                            validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.lg),
+                        Expanded(
+                          child: CustomTextField(
+                            controller: _yearController,
+                            label: 'Year',
+                            hint: 'e.g. 1st Year',
+                            validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+
+                  if (_selectedRole == 'PhD Student') ...[
+                    CustomTextField(
+                      controller: _collegeController,
+                      label: 'University Name',
+                      hint: 'e.g. GLA University',
+                      prefixIcon: const Icon(Icons.school_outlined),
+                      validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomTextField(
+                            controller: _researchAreaController,
+                            label: 'Research Area',
+                            hint: 'e.g. Quantum Computing',
+                            validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.lg),
+                        Expanded(
+                          child: CustomTextField(
+                            controller: _yearController,
+                            label: 'Year of Study',
+                            hint: 'e.g. 2nd Year',
+                            validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+
+                  if (_selectedRole == 'Professional' || _selectedRole == 'Other') ...[
+                    CustomTextField(
+                      controller: _organizationController,
+                      label: 'Organization / Company',
+                      hint: 'e.g. Google',
+                      prefixIcon: const Icon(Icons.business_outlined),
+                      validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomTextField(
+                            controller: _designationController,
+                            label: 'Role / Designation',
+                            hint: 'e.g. Software Engineer',
+                            validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.lg),
+                        Expanded(
+                          child: CustomTextField(
+                            controller: _experienceController,
+                            label: 'Experience',
+                            hint: 'e.g. 3 Years',
+                            validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
