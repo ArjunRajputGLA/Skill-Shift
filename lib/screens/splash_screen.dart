@@ -23,6 +23,7 @@ class _SplashScreenState extends State<SplashScreen> {
       ..initialize().then((_) {
         if (mounted) {
           setState(() {}); // Update to show first frame
+          _controller.setPlaybackSpeed(1.75); // Speed up the animation
           _controller.play();
           
           // Listen for video completion
