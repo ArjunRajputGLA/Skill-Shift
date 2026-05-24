@@ -56,6 +56,8 @@ dependencies:
   google_sign_in: ^6.2.1
   timeago: ^3.7.1
   video_player: ^2.11.1
+  file_picker: ^11.0.2
+  syncfusion_flutter_pdfviewer: ^33.2.7
 
 dev_dependencies:
   flutter_test:

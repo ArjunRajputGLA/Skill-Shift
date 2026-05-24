@@ -16,6 +16,7 @@ import 'profile_screen.dart';
 import 'notification_center_screen.dart';
 import '../services/notification_service.dart';
 import '../services/firebase_notification_service.dart';
+import '../farrey/widgets/farrey_entry_widget.dart';
 
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
@@ -148,6 +149,10 @@ class MainLayoutState extends State<MainLayout> {
             onTap: _onTabTapped,
           ),
         ),
+      ),
+      floatingActionButton: const Padding(
+        padding: EdgeInsets.only(bottom: 80.0), // Above the custom bottom nav
+        child: FarreyEntryWidget(),
       ),
     );
   }
