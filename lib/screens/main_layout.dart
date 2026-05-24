@@ -95,52 +95,51 @@ class MainLayoutState extends State<MainLayout> {
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      extendBody: true,
-      body: GradientBackground(
-        accentColor1: _screenAccents[_currentIndex][0],
-        accentColor2: _screenAccents[_currentIndex][1],
-        child: Column(
-          children: [
-            // Floating Header
-            SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.only(
-                  left: AppSpacing.lg,
-                  right: AppSpacing.lg,
-                  top: AppSpacing.md,
-                  bottom: AppSpacing.xs,
+    return Stack(
+      children: [
+        Scaffold(
+          resizeToAvoidBottomInset: false,
+          extendBody: true,
+          body: GradientBackground(
+            accentColor1: _screenAccents[_currentIndex][0],
+            accentColor2: _screenAccents[_currentIndex][1],
+            child: Column(
+              children: [
+                // Floating Header
+                SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      left: AppSpacing.lg,
+                      right: AppSpacing.lg,
+                      top: AppSpacing.md,
+                      bottom: AppSpacing.xs,
+                    ),
+                    child: _FloatingHeader(
+                      title: _titles[_currentIndex],
+                      isDark: isDark,
+                      unreadNotificationsStream: _unreadNotificationsStream,
+                      onAvatarTap: () => _onTabTapped(4),
+                    ),
+                  ),
                 ),
-                child: _FloatingHeader(
-                  title: _titles[_currentIndex],
-                  isDark: isDark,
-                  unreadNotificationsStream: _unreadNotificationsStream,
-                  onAvatarTap: () => _onTabTapped(4),
+                
+                // Content Pages
+                Expanded(
+                  child: PageView(
+                    controller: pageController,
+                    physics: const BouncingScrollPhysics(),
+                    onPageChanged: (index) {
+                      setState(() => _currentIndex = index);
+                    },
+                    children: _screens,
+                  ),
                 ),
-              ),
+              ],
             ),
-            
-            // Content Pages
-            Expanded(
-              child: PageView(
-                controller: pageController,
-                physics: const BouncingScrollPhysics(),
-                onPageChanged: (index) {
-                  setState(() => _currentIndex = index);
-                },
-                children: _screens,
-              ),
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Stack(
-          alignment: Alignment.centerRight,
-          children: [
-            Padding(
+          ),
+          bottomNavigationBar: SafeArea(
+            child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.xxl,
                 vertical: AppSpacing.lg,
@@ -152,10 +151,10 @@ class MainLayoutState extends State<MainLayout> {
                 onTap: _onTabTapped,
               ),
             ),
-            const FarreyEntryWidget(), // Sits flush on the right edge
-          ],
+          ),
         ),
-      ),
+        const FarreyEntryWidget(),
+      ],
     );
   }
 }
