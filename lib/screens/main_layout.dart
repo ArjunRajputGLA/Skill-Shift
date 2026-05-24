@@ -137,22 +137,24 @@ class MainLayoutState extends State<MainLayout> {
         ),
       ),
       bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.xxl,
-            vertical: AppSpacing.lg,
-          ),
-          child: _FloatingGlassNav(
-            currentIndex: _currentIndex,
-            isDark: isDark,
-            unreadChatsStream: _unreadChatsStream,
-            onTap: _onTabTapped,
-          ),
+        child: Stack(
+          alignment: Alignment.centerRight,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.xxl,
+                vertical: AppSpacing.lg,
+              ),
+              child: _FloatingGlassNav(
+                currentIndex: _currentIndex,
+                isDark: isDark,
+                unreadChatsStream: _unreadChatsStream,
+                onTap: _onTabTapped,
+              ),
+            ),
+            const FarreyEntryWidget(), // Sits flush on the right edge
+          ],
         ),
-      ),
-      floatingActionButton: const Padding(
-        padding: EdgeInsets.only(bottom: 80.0), // Above the custom bottom nav
-        child: FarreyEntryWidget(),
       ),
     );
   }
