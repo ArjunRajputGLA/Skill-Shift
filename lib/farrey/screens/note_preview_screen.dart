@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
@@ -32,8 +33,6 @@ class _NotePreviewScreenState extends State<NotePreviewScreen> {
         _checkIfSaved(user.id);
       }
     });
-    
-    // In a real app, we would also increment the totalViews here.
   }
 
   void _checkIfSaved(String uid) {
@@ -72,7 +71,6 @@ class _NotePreviewScreenState extends State<NotePreviewScreen> {
   }
 
   void _showRatingDialog() {
-    // A simple rating dialog (1-5 stars)
     int selectedRating = 5;
     
     showDialog(
@@ -81,16 +79,16 @@ class _NotePreviewScreenState extends State<NotePreviewScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text('Rate this note', style: TextStyle(color: FarreyColors.textPrimary)),
-              backgroundColor: FarreyColors.surface,
+              title: Text('Rate this note', style: TextStyle(color: context.farreyTextPrimary)),
+              backgroundColor: context.farreySurface,
               content: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(5, (index) {
                   return IconButton(
                     icon: Icon(
-                      index < selectedRating ? Icons.star : Icons.star_border,
-                      color: FarreyColors.warning,
-                      size: 32,
+                      index < selectedRating ? Icons.star_rounded : Icons.star_border_rounded,
+                      color: context.farreyWarning,
+                      size: 36,
                     ),
                     onPressed: () {
                       setDialogState(() {
@@ -103,17 +101,16 @@ class _NotePreviewScreenState extends State<NotePreviewScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel', style: TextStyle(color: FarreyColors.textSecondary)),
+                  child: Text('Cancel', style: TextStyle(color: context.farreyTextSecondary)),
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    // In a full implementation, this would save to Firestore and update average
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Thanks for rating!'), backgroundColor: FarreyColors.success),
+                      SnackBar(content: const Text('Thanks for rating!'), backgroundColor: context.farreySuccess),
                     );
                   },
-                  style: ElevatedButton.styleFrom(backgroundColor: FarreyColors.primary),
+                  style: ElevatedButton.styleFrom(backgroundColor: context.farreyPrimary),
                   child: const Text('Submit', style: TextStyle(color: Colors.white)),
                 ),
               ],
@@ -135,173 +132,253 @@ class _NotePreviewScreenState extends State<NotePreviewScreen> {
     final bool isPdf = widget.note.fileType.toLowerCase() == 'pdf';
 
     return Scaffold(
-      backgroundColor: FarreyColors.background,
-      appBar: AppBar(
-        backgroundColor: FarreyColors.surface,
-        elevation: 1,
-        title: Text(widget.note.title, style: const TextStyle(color: FarreyColors.textPrimary, fontSize: 16)),
-        iconTheme: const IconThemeData(color: FarreyColors.textPrimary),
-        actions: [
-          IconButton(
-            icon: Icon(_isSaved ? Icons.bookmark : Icons.bookmark_border, color: _isSaved ? FarreyColors.primary : FarreyColors.textSecondary),
-            onPressed: _toggleSave,
-          ),
-          IconButton(
-            icon: const Icon(Icons.star_rate, color: FarreyColors.warning),
-            onPressed: _showRatingDialog,
-          ),
-        ],
-      ),
-      body: Column(
+      backgroundColor: context.farreyBackground,
+      body: Stack(
         children: [
-          // 1. PDF / Image Viewer
-          Expanded(
-            flex: 6,
-            child: Container(
-              color: FarreyColors.surfaceElevated,
-              child: isPdf
-                  ? SfPdfViewer.network(widget.note.fileUrl)
-                  : Image.network(
-                      widget.note.fileUrl,
-                      fit: BoxFit.contain,
-                      loadingBuilder: (context, child, progress) {
-                        if (progress == null) return child;
-                        return const Center(child: CircularProgressIndicator(color: FarreyColors.primary));
-                      },
-                      errorBuilder: (context, error, stackTrace) => const Center(
-                        child: Text('Failed to load image', style: TextStyle(color: FarreyColors.error)),
-                      ),
-                    ),
-            ),
-          ),
-          
-          // 2. Note Metadata Area
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: FarreyColors.surface,
-            width: double.infinity,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.note.title,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: FarreyColors.textPrimary),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'By ${widget.note.uploaderName} • ${widget.note.subject}',
-                  style: const TextStyle(color: FarreyColors.textSecondary, fontSize: 14),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  widget.note.description,
-                  style: const TextStyle(color: FarreyColors.textPrimary, fontSize: 14),
-                ),
-              ],
-            ),
-          ),
-
-          // 3. Comments Section Header
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: FarreyColors.surfaceElevated,
-            child: const Text(
-              'Discussion',
-              style: TextStyle(fontWeight: FontWeight.bold, color: FarreyColors.textPrimary),
-            ),
-          ),
-
-          // 4. Comments List
-          Expanded(
-            flex: 4,
-            child: StreamBuilder<List<FarreyCommentModel>>(
-              stream: _dbService.getNoteComments(widget.note.noteId),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator(color: FarreyColors.primary));
-                }
-                
-                final comments = snapshot.data ?? [];
-                
-                if (comments.isEmpty) {
-                  return const Center(
-                    child: Text('No comments yet. Be the first to start a discussion!', style: TextStyle(color: FarreyColors.textSecondary)),
-                  );
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: comments.length,
-                  itemBuilder: (context, index) {
-                    final comment = comments[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12.0),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CircleAvatar(
-                            radius: 16,
-                            backgroundColor: FarreyColors.primary.withValues(alpha: 0.2),
-                            child: const Icon(Icons.person, size: 16, color: FarreyColors.primary),
+          // Main Content Area
+          Column(
+            children: [
+              // 1. PDF / Image Viewer (Takes up space but leaves room for header)
+              Expanded(
+                flex: 6,
+                child: Container(
+                  padding: const EdgeInsets.only(top: 100), // Push below floating header
+                  color: context.farreySurfaceElevated,
+                  child: isPdf
+                      ? SfPdfViewer.network(widget.note.fileUrl)
+                      : Image.network(
+                          widget.note.fileUrl,
+                          fit: BoxFit.contain,
+                          loadingBuilder: (context, child, progress) {
+                            if (progress == null) return child;
+                            return Center(child: CircularProgressIndicator(color: context.farreyPrimary));
+                          },
+                          errorBuilder: (context, error, stackTrace) => Center(
+                            child: Text('Failed to load image', style: TextStyle(color: context.farreyError)),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: FarreyColors.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: FarreyColors.border),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    comment.text,
-                                    style: const TextStyle(color: FarreyColors.textPrimary),
+                        ),
+                ),
+              ),
+              
+              // 2. Note Metadata Area
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: context.farreySurface,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
+                ),
+                width: double.infinity,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.note.title,
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: context.farreyTextPrimary),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'By ${widget.note.uploaderName} • ${widget.note.subject}',
+                      style: TextStyle(color: context.farreyTextSecondary, fontSize: 14),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      widget.note.description,
+                      style: TextStyle(color: context.farreyTextPrimary, fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+
+              // 3. Comments Section Header
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                color: context.farreyBackground,
+                child: Text(
+                  'Discussion',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: context.farreyTextPrimary),
+                ),
+              ),
+
+              // 4. Comments List
+              Expanded(
+                flex: 4,
+                child: Container(
+                  color: context.farreyBackground,
+                  child: StreamBuilder<List<FarreyCommentModel>>(
+                    stream: _dbService.getNoteComments(widget.note.noteId),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Center(child: CircularProgressIndicator(color: context.farreyPrimary));
+                      }
+                      
+                      final comments = snapshot.data ?? [];
+                      
+                      if (comments.isEmpty) {
+                        return Center(
+                          child: Text('No comments yet. Be the first to start a discussion!', style: TextStyle(color: context.farreyTextSecondary)),
+                        );
+                      }
+
+                      return ListView.builder(
+                        padding: const EdgeInsets.all(24),
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: comments.length,
+                        itemBuilder: (context, index) {
+                          final comment = comments[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 16.0),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CircleAvatar(
+                                  radius: 18,
+                                  backgroundColor: context.farreyPrimary.withValues(alpha: 0.1),
+                                  child: Icon(Icons.person_rounded, size: 18, color: context.farreyPrimary),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: context.farreySurface,
+                                      borderRadius: const BorderRadius.only(
+                                        topRight: Radius.circular(16),
+                                        bottomLeft: Radius.circular(16),
+                                        bottomRight: Radius.circular(16),
+                                      ),
+                                      border: Border.all(color: context.farreyBorder),
+                                    ),
+                                    child: Text(
+                                      comment.text,
+                                      style: TextStyle(color: context.farreyTextPrimary, height: 1.4),
+                                    ),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ),
+
+              // 5. Add Comment Input
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                decoration: BoxDecoration(
+                  color: context.farreySurface,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _commentController,
+                          style: TextStyle(color: context.farreyTextPrimary),
+                          decoration: InputDecoration(
+                            hintText: 'Add a comment...',
+                            hintStyle: TextStyle(color: context.farreyTextSecondary),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(24),
+                              borderSide: BorderSide.none,
+                            ),
+                            filled: true,
+                            fillColor: context.farreyBackground,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: context.farreyPrimary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.send_rounded, color: Colors.white),
+                          onPressed: _postComment,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // Floating Header
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: context.farreySurface.withValues(alpha: context.isDark ? 0.7 : 0.8),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: context.isDark 
+                              ? Colors.white.withValues(alpha: 0.05) 
+                              : Colors.black.withValues(alpha: 0.05),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.arrow_back_rounded, color: context.farreyTextPrimary),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                          Expanded(
+                            child: Text(
+                              widget.note.title,
+                              style: TextStyle(
+                                color: context.farreyTextPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(_isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded, 
+                              color: _isSaved ? context.farreyPrimary : context.farreyTextSecondary),
+                            onPressed: _toggleSave,
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.star_rounded, color: context.farreyWarning),
+                            onPressed: _showRatingDialog,
                           ),
                         ],
                       ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-
-          // 5. Add Comment Input
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: FarreyColors.surface,
-            child: SafeArea(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _commentController,
-                      style: const TextStyle(color: FarreyColors.textPrimary),
-                      decoration: InputDecoration(
-                        hintText: 'Add a comment...',
-                        hintStyle: const TextStyle(color: FarreyColors.textSecondary),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(20),
-                          borderSide: const BorderSide(color: FarreyColors.border),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.send, color: FarreyColors.primary),
-                    onPressed: _postComment,
-                  ),
-                ],
+                ),
               ),
             ),
           ),

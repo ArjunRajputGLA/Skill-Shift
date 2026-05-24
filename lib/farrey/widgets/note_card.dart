@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../models/farrey_models.dart';
 import '../theme/farrey_colors.dart';
 import '../screens/note_preview_screen.dart';
-import 'package:intl/intl.dart';
 
 class NoteCard extends StatelessWidget {
   final FarreyNoteModel note;
@@ -21,14 +20,14 @@ class NoteCard extends StatelessWidget {
         width: 160,
         margin: const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
-          color: FarreyColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: FarreyColors.border),
+          color: context.farreySurface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: context.farreyBorder),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
@@ -38,15 +37,15 @@ class NoteCard extends StatelessWidget {
             // Top banner indicating file type or cover
             Container(
               height: 80,
-              decoration: const BoxDecoration(
-                color: FarreyColors.surfaceElevated,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+              decoration: BoxDecoration(
+                color: context.farreySurfaceElevated,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
               ),
               child: Center(
                 child: Icon(
-                  note.fileType.toLowerCase() == 'pdf' ? Icons.picture_as_pdf : Icons.image,
+                  note.fileType.toLowerCase() == 'pdf' ? Icons.picture_as_pdf_rounded : Icons.image_rounded,
                   size: 40,
-                  color: FarreyColors.primary.withValues(alpha: 0.5),
+                  color: context.farreyPrimary.withValues(alpha: 0.5),
                 ),
               ),
             ),
@@ -59,8 +58,8 @@ class NoteCard extends StatelessWidget {
                     note.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: FarreyColors.textPrimary,
+                    style: TextStyle(
+                      color: context.farreyTextPrimary,
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
@@ -70,31 +69,31 @@ class NoteCard extends StatelessWidget {
                     note.subject,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: FarreyColors.textSecondary,
+                    style: TextStyle(
+                      color: context.farreyTextSecondary,
                       fontSize: 12,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.star, color: FarreyColors.warning, size: 14),
+                      Icon(Icons.star_rounded, color: context.farreyWarning, size: 16),
                       const SizedBox(width: 4),
                       Text(
                         note.averageRating.toStringAsFixed(1),
-                        style: const TextStyle(
-                          color: FarreyColors.textSecondary,
+                        style: TextStyle(
+                          color: context.farreyTextSecondary,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       const Spacer(),
-                      const Icon(Icons.download, color: FarreyColors.textSecondary, size: 14),
-                      const SizedBox(width: 2),
+                      Icon(Icons.download_rounded, color: context.farreyTextSecondary, size: 14),
+                      const SizedBox(width: 4),
                       Text(
                         '${note.totalDownloads}',
-                        style: const TextStyle(
-                          color: FarreyColors.textSecondary,
+                        style: TextStyle(
+                          color: context.farreyTextSecondary,
                           fontSize: 12,
                         ),
                       ),

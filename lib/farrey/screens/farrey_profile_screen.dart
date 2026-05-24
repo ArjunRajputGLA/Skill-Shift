@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -14,137 +15,196 @@ class FarreyProfileScreen extends StatelessWidget {
     final user = context.watch<AuthService>().currentUser;
     
     if (user == null) {
-      return const Scaffold(
-        backgroundColor: FarreyColors.background,
-        body: Center(child: Text('Please log in.', style: TextStyle(color: FarreyColors.textPrimary))),
+      return Scaffold(
+        backgroundColor: context.farreyBackground,
+        body: Center(child: Text('Please log in.', style: TextStyle(color: context.farreyTextPrimary))),
       );
     }
 
     return Scaffold(
-      backgroundColor: FarreyColors.background,
-      appBar: AppBar(
-        backgroundColor: FarreyColors.surface,
-        elevation: 0,
-        title: const Text('My Farrey Profile', style: TextStyle(color: FarreyColors.textPrimary, fontWeight: FontWeight.bold)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.exit_to_app, color: FarreyColors.textPrimary),
-            onPressed: () {
-              Navigator.of(context).pop(); // Go back to Skill Shift
-            },
-            tooltip: 'Return to Skill Shift',
-          ),
-        ],
-      ),
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              color: FarreyColors.surface,
-              child: Column(
-                children: [
-                  CircleAvatar(
-                    radius: 40,
-                    backgroundColor: FarreyColors.primary.withValues(alpha: 0.1),
-                    child: Text(
-                      user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : '?',
-                      style: const TextStyle(fontSize: 32, color: FarreyColors.primary, fontWeight: FontWeight.bold),
+      backgroundColor: context.farreyBackground,
+      body: Stack(
+        children: [
+          // Content
+          CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.only(top: 110),
+                sliver: SliverToBoxAdapter(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: context.farreySurface,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: context.farreyBorder),
+                    ),
+                    child: Column(
+                      children: [
+                        CircleAvatar(
+                          radius: 40,
+                          backgroundColor: context.farreyPrimary.withValues(alpha: 0.1),
+                          child: Text(
+                            user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : '?',
+                            style: TextStyle(fontSize: 32, color: context.farreyPrimary, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          user.fullName,
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: context.farreyTextPrimary),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          user.email,
+                          style: TextStyle(fontSize: 14, color: context.farreyTextSecondary),
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _buildStatColumn(context, 'Reputation', 'Great'),
+                            _buildStatColumn(context, 'Role', user.userType ?? 'Student'),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    user.fullName,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: FarreyColors.textPrimary),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    user.email,
-                    style: const TextStyle(fontSize: 14, color: FarreyColors.textSecondary),
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildStatColumn('Reputation', 'Great'),
-                      _buildStatColumn('Role', user.userType ?? 'Student'),
-                    ],
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text(
-                'My Uploads',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: FarreyColors.textPrimary),
-              ),
-            ),
-          ),
-          StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('farrey_notes')
-                .where('uploaderUid', isEqualTo: user.id)
-                .orderBy('uploadTime', descending: true)
-                .snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator(color: FarreyColors.primary)),
-                );
-              }
-              
-              final docs = snapshot.data?.docs ?? [];
-              
-              if (docs.isEmpty) {
-                return const SliverFillRemaining(
-                  child: Center(
-                    child: Text('You haven\'t uploaded any notes yet.', style: TextStyle(color: FarreyColors.textSecondary)),
-                  ),
-                );
-              }
-
-              return SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.75,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final note = FarreyNoteModel.fromMap(
-                        docs[index].data() as Map<String, dynamic>,
-                        docs[index].id,
-                      );
-                      return NoteCard(note: note);
-                    },
-                    childCount: docs.length,
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Text(
+                    'My Uploads',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.farreyTextPrimary),
                   ),
                 ),
-              );
-            },
+              ),
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('farrey_notes')
+                    .where('uploaderUid', isEqualTo: user.id)
+                    .orderBy('uploadTime', descending: true)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return SliverFillRemaining(
+                      child: Center(child: CircularProgressIndicator(color: context.farreyPrimary)),
+                    );
+                  }
+                  
+                  final docs = snapshot.data?.docs ?? [];
+                  
+                  if (docs.isEmpty) {
+                    return SliverFillRemaining(
+                      child: Center(
+                        child: Text('You haven\'t uploaded any notes yet.', style: TextStyle(color: context.farreyTextSecondary)),
+                      ),
+                    );
+                  }
+
+                  return SliverPadding(
+                    padding: const EdgeInsets.only(left: 16, right: 16, bottom: 120),
+                    sliver: SliverGrid(
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 0.75,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                      ),
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final note = FarreyNoteModel.fromMap(
+                            docs[index].data() as Map<String, dynamic>,
+                            docs[index].id,
+                          );
+                          return NoteCard(note: note);
+                        },
+                        childCount: docs.length,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+          
+          // Floating Header
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: context.farreySurface.withValues(alpha: context.isDark ? 0.7 : 0.8),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: context.isDark 
+                              ? Colors.white.withValues(alpha: 0.05) 
+                              : Colors.black.withValues(alpha: 0.05),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'My Profile',
+                            style: TextStyle(
+                              color: context.farreyTextPrimary,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 20,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: context.farreyError.withValues(alpha: 0.1),
+                            ),
+                            child: IconButton(
+                              icon: Icon(Icons.exit_to_app_rounded, color: context.farreyError),
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              tooltip: 'Return to Skill Shift',
+                              splashRadius: 24,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatColumn(String label, String value) {
+  Widget _buildStatColumn(BuildContext context, String label, String value) {
     return Column(
       children: [
         Text(
           value,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: FarreyColors.primary),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.farreyPrimary),
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: const TextStyle(fontSize: 12, color: FarreyColors.textSecondary),
+          style: TextStyle(fontSize: 12, color: context.farreyTextSecondary),
         ),
       ],
     );

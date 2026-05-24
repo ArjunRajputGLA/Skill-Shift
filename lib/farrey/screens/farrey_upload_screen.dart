@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
@@ -49,7 +50,7 @@ class _FarreyUploadScreenState extends State<FarreyUploadScreen> {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a file to upload.', style: TextStyle(color: Colors.white)), backgroundColor: FarreyColors.error),
+        SnackBar(content: const Text('Please select a file to upload.', style: TextStyle(color: Colors.white)), backgroundColor: context.farreyError),
       );
       return;
     }
@@ -63,14 +64,12 @@ class _FarreyUploadScreenState extends State<FarreyUploadScreen> {
     }
 
     try {
-      // 1. Upload File to Storage
       final fileUrl = await _storageService.uploadNoteFile(_selectedFile!, _fileExtension ?? 'pdf');
       
       if (fileUrl == null) {
         throw Exception('Failed to upload file to storage');
       }
 
-      // 2. Save Metadata to Firestore
       final noteId = DateTime.now().millisecondsSinceEpoch.toString();
       final tagsList = _tagsController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
 
@@ -94,7 +93,7 @@ class _FarreyUploadScreenState extends State<FarreyUploadScreen> {
       if (error == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Note uploaded successfully!'), backgroundColor: FarreyColors.success),
+            SnackBar(content: const Text('Note uploaded successfully!'), backgroundColor: context.farreySuccess),
           );
           _clearForm();
         }
@@ -104,7 +103,7 @@ class _FarreyUploadScreenState extends State<FarreyUploadScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: FarreyColors.error),
+          SnackBar(content: Text('Error: $e'), backgroundColor: context.farreyError),
         );
       }
     } finally {
@@ -141,117 +140,152 @@ class _FarreyUploadScreenState extends State<FarreyUploadScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: FarreyColors.background,
-      appBar: AppBar(
-        backgroundColor: FarreyColors.surface,
-        elevation: 0,
-        title: const Text(
-          'Upload Note',
-          style: TextStyle(
-            color: FarreyColors.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      body: _isUploading
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: FarreyColors.primary),
-                  SizedBox(height: 16),
-                  Text('Uploading your note to Farrey...', style: TextStyle(color: FarreyColors.textSecondary)),
-                ],
-              ),
-            )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // File Picker Area
-                    GestureDetector(
-                      onTap: _pickFile,
-                      child: Container(
-                        height: 120,
-                        decoration: BoxDecoration(
-                          color: FarreyColors.surface,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: _selectedFile == null ? FarreyColors.primary.withValues(alpha: 0.3) : FarreyColors.success,
-                            style: BorderStyle.solid,
-                            width: 2,
-                          ),
-                        ),
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                _selectedFile == null ? Icons.cloud_upload_outlined : Icons.check_circle_outline,
-                                size: 40,
-                                color: _selectedFile == null ? FarreyColors.primary : FarreyColors.success,
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                _selectedFile == null ? 'Tap to browse files' : 'File selected: ${_selectedFile!.path.split('\\').last}',
-                                style: TextStyle(
-                                  color: _selectedFile == null ? FarreyColors.primary : FarreyColors.success,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    _buildTextField(_titleController, 'Title', 'E.g., Operating Systems Unit 1'),
-                    const SizedBox(height: 16),
-                    _buildTextField(_descController, 'Description', 'What is this note about?', maxLines: 3),
-                    const SizedBox(height: 16),
-                    Row(
+      backgroundColor: context.farreyBackground,
+      body: Stack(
+        children: [
+          // Content
+          _isUploading
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(color: context.farreyPrimary),
+                      const SizedBox(height: 16),
+                      Text('Uploading your note to Notes Ecosystem...', style: TextStyle(color: context.farreyTextSecondary)),
+                    ],
+                  ),
+                )
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.only(top: 110, left: 24, right: 24, bottom: 120),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Expanded(child: _buildTextField(_subjectController, 'Subject', 'E.g., OS')),
-                        const SizedBox(width: 16),
-                        Expanded(child: _buildTextField(_semesterController, 'Semester', 'E.g., 5th')),
+                        // File Picker Area
+                        GestureDetector(
+                          onTap: _pickFile,
+                          child: Container(
+                            height: 120,
+                            decoration: BoxDecoration(
+                              color: context.farreySurface,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: _selectedFile == null ? context.farreyPrimary.withValues(alpha: 0.3) : context.farreySuccess,
+                                style: BorderStyle.solid,
+                                width: 2,
+                              ),
+                            ),
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    _selectedFile == null ? Icons.cloud_upload_outlined : Icons.check_circle_outline,
+                                    size: 40,
+                                    color: _selectedFile == null ? context.farreyPrimary : context.farreySuccess,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    _selectedFile == null ? 'Tap to browse files' : 'File selected: ${_selectedFile!.path.split('\\').last}',
+                                    style: TextStyle(
+                                      color: _selectedFile == null ? context.farreyPrimary : context.farreySuccess,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        
+                        _buildTextField(context, _titleController, 'Title', 'E.g., Operating Systems Unit 1'),
+                        const SizedBox(height: 16),
+                        _buildTextField(context, _descController, 'Description', 'What is this note about?', maxLines: 3),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(child: _buildTextField(context, _subjectController, 'Subject', 'E.g., OS')),
+                            const SizedBox(width: 16),
+                            Expanded(child: _buildTextField(context, _semesterController, 'Semester', 'E.g., 5th')),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(context, _branchController, 'Branch', 'E.g., Computer Science'),
+                        const SizedBox(height: 16),
+                        _buildTextField(context, _tagsController, 'Tags (Comma separated)', 'E.g., scheduling, threads, memory'),
+                        const SizedBox(height: 32),
+
+                        ElevatedButton(
+                          onPressed: _uploadNote,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: context.farreyPrimary,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            'Upload to Ecosystem',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    _buildTextField(_branchController, 'Branch', 'E.g., Computer Science'),
-                    const SizedBox(height: 16),
-                    _buildTextField(_tagsController, 'Tags (Comma separated)', 'E.g., scheduling, threads, memory'),
-                    const SizedBox(height: 32),
-
-                    ElevatedButton(
-                      onPressed: _uploadNote,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: FarreyColors.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        elevation: 0,
+                  ),
+                ),
+                
+          // Floating Header
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: context.farreySurface.withValues(alpha: context.isDark ? 0.7 : 0.8),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: context.isDark 
+                              ? Colors.white.withValues(alpha: 0.05) 
+                              : Colors.black.withValues(alpha: 0.05),
+                        ),
                       ),
-                      child: const Text(
-                        'Upload to Ecosystem',
+                      child: Text(
+                        'Upload Note',
                         style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: context.farreyTextPrimary,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 20,
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildTextField(
+    BuildContext context,
     TextEditingController controller,
     String label,
     String hint, {
@@ -260,25 +294,25 @@ class _FarreyUploadScreenState extends State<FarreyUploadScreen> {
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
-      style: const TextStyle(color: FarreyColors.textPrimary),
+      style: TextStyle(color: context.farreyTextPrimary),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        labelStyle: const TextStyle(color: FarreyColors.textSecondary),
-        hintStyle: TextStyle(color: FarreyColors.textSecondary.withValues(alpha: 0.5)),
+        labelStyle: TextStyle(color: context.farreyTextSecondary),
+        hintStyle: TextStyle(color: context.farreyTextSecondary.withValues(alpha: 0.5)),
         filled: true,
-        fillColor: FarreyColors.surface,
+        fillColor: context.farreySurface,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: FarreyColors.border),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: context.farreyBorder),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: FarreyColors.border),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: context.farreyBorder),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: FarreyColors.primary, width: 2),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: context.farreyPrimary, width: 2),
         ),
       ),
       validator: (value) => value == null || value.isEmpty ? 'This field is required' : null,

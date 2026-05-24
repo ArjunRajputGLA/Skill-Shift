@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/farrey_colors.dart';
 import 'farrey_home_screen.dart';
@@ -45,26 +46,125 @@ class _FarreyMainLayoutState extends State<FarreyMainLayout> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: FarreyColors.background,
+      backgroundColor: context.farreyBackground,
+      extendBody: true, // Allows content to scroll underneath the floating nav bar
       body: PageView(
         controller: _pageController,
         physics: const NeverScrollableScrollPhysics(), // Use bottom nav to switch
         children: _screens,
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: _onTabTapped,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: FarreyColors.surface,
-        selectedItemColor: FarreyColors.primary,
-        unselectedItemColor: FarreyColors.textSecondary,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Explore'),
-          BottomNavigationBarItem(icon: Icon(Icons.add_circle_outline), label: 'Upload'),
-          BottomNavigationBarItem(icon: Icon(Icons.bookmark_border), label: 'Saved'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
-        ],
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+          child: _FloatingGlassNav(
+            currentIndex: _currentIndex,
+            onTap: _onTabTapped,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FloatingGlassNav extends StatelessWidget {
+  final int currentIndex;
+  final Function(int) onTap;
+
+  const _FloatingGlassNav({
+    required this.currentIndex,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = context.isDark;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(32),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          height: 64,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            color: context.farreySurface.withValues(alpha: isDark ? 0.7 : 0.8),
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(
+              color: isDark 
+                  ? Colors.white.withValues(alpha: 0.05) 
+                  : Colors.black.withValues(alpha: 0.05),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _NavItem(icon: Icons.home_rounded, label: 'Home', index: 0, currentIndex: currentIndex, onTap: onTap),
+              _NavItem(icon: Icons.search_rounded, label: 'Explore', index: 1, currentIndex: currentIndex, onTap: onTap),
+              _NavItem(icon: Icons.add_circle_rounded, label: 'Upload', index: 2, currentIndex: currentIndex, onTap: onTap),
+              _NavItem(icon: Icons.bookmark_rounded, label: 'Saved', index: 3, currentIndex: currentIndex, onTap: onTap),
+              _NavItem(icon: Icons.person_rounded, label: 'Profile', index: 4, currentIndex: currentIndex, onTap: onTap),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final int index;
+  final int currentIndex;
+  final Function(int) onTap;
+
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.index,
+    required this.currentIndex,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isSelected = index == currentIndex;
+    final color = isSelected ? context.farreyPrimary : context.farreyTextSecondary;
+    
+    return GestureDetector(
+      onTap: () => onTap(index),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? context.farreyPrimary.withValues(alpha: 0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 24),
+            if (isSelected) ...[
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ]
+          ],
+        ),
       ),
     );
   }
