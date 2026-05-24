@@ -324,23 +324,21 @@ class _NotePreviewScreenState extends State<NotePreviewScreen> {
           ),
 
           // Floating Header
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
+          Align(
+            alignment: Alignment.topCenter,
             child: SafeArea(
               bottom: false,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(30),
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                       decoration: BoxDecoration(
                         color: context.farreySurface.withValues(alpha: context.isDark ? 0.7 : 0.8),
-                        borderRadius: BorderRadius.circular(24),
+                        borderRadius: BorderRadius.circular(30),
                         border: Border.all(
                           color: context.isDark 
                               ? Colors.white.withValues(alpha: 0.05) 
@@ -348,12 +346,14 @@ class _NotePreviewScreenState extends State<NotePreviewScreen> {
                         ),
                       ),
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
                             icon: Icon(Icons.arrow_back_rounded, color: context.farreyTextPrimary),
                             onPressed: () => Navigator.pop(context),
                           ),
-                          Expanded(
+                          Container(
+                            constraints: const BoxConstraints(maxWidth: 120),
                             child: Text(
                               widget.note.title,
                               style: TextStyle(

@@ -4,17 +4,17 @@ extension FarreyThemeContext on BuildContext {
   bool get isDark => Theme.of(this).brightness == Brightness.dark;
 
   // Background & Surfaces
-  Color get farreyBackground => isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
-  Color get farreySurface => isDark ? const Color(0xFF1E293B) : const Color(0xFFFFFFFF);
-  Color get farreySurfaceElevated => isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9);
+  Color get farreyBackground => isDark ? const Color(0xFF18181B) : const Color(0xFFFAFAFA);
+  Color get farreySurface => isDark ? const Color(0xFF27272A) : const Color(0xFFFFFFFF);
+  Color get farreySurfaceElevated => isDark ? const Color(0xFF3F3F46) : const Color(0xFFF4F4F5);
 
-  // Accents (Premium Indigo & Violet)
-  Color get farreyPrimary => isDark ? const Color(0xFF818CF8) : const Color(0xFF6366F1);
-  Color get farreySecondary => isDark ? const Color(0xFFA78BFA) : const Color(0xFF8B5CF6);
+  // Accents (Orangish Yellow Theme)
+  Color get farreyPrimary => isDark ? const Color(0xFFFBBF24) : const Color(0xFFF59E0B);
+  Color get farreySecondary => isDark ? const Color(0xFFF59E0B) : const Color(0xFFD97706);
 
   // Typography
-  Color get farreyTextPrimary => isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
-  Color get farreyTextSecondary => isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+  Color get farreyTextPrimary => isDark ? const Color(0xFFF4F4F5) : const Color(0xFF18181B);
+  Color get farreyTextSecondary => isDark ? const Color(0xFFA1A1AA) : const Color(0xFF71717A);
 
   // States
   Color get farreyError => isDark ? const Color(0xFFF87171) : const Color(0xFFEF4444);
@@ -22,8 +22,8 @@ extension FarreyThemeContext on BuildContext {
   Color get farreyWarning => isDark ? const Color(0xFFFBBF24) : const Color(0xFFF59E0B);
 
   // Borders & Dividers
-  Color get farreyBorder => isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-  Color get farreyDivider => isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9);
+  Color get farreyBorder => isDark ? const Color(0xFF3F3F46) : const Color(0xFFE4E4E7);
+  Color get farreyDivider => isDark ? const Color(0xFF27272A) : const Color(0xFFF4F4F5);
 }
 
 // Keep a static fallback class just in case some models/widgets can't access context easily.

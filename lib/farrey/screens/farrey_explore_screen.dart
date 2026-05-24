@@ -2,6 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/farrey_colors.dart';
 import '../services/farrey_database_service.dart';
+import 'package:provider/provider.dart';
+import '../../theme/theme_provider.dart';
 import '../models/farrey_models.dart';
 import '../widgets/note_card.dart';
 
@@ -93,11 +95,9 @@ class _FarreyExploreScreenState extends State<FarreyExploreScreen> {
                         ),
           ),
           
-          // Floating Search Header
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
+          // Floating Header
+          Align(
+            alignment: Alignment.topCenter,
             child: SafeArea(
               bottom: false,
               child: Padding(
@@ -107,6 +107,7 @@ class _FarreyExploreScreenState extends State<FarreyExploreScreen> {
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
                     child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
                         color: context.farreySurface.withValues(alpha: context.isDark ? 0.7 : 0.8),
                         borderRadius: BorderRadius.circular(30),
@@ -116,25 +117,57 @@ class _FarreyExploreScreenState extends State<FarreyExploreScreen> {
                               : Colors.black.withValues(alpha: 0.05),
                         ),
                       ),
-                      child: TextField(
-                        controller: _searchController,
-                        style: TextStyle(color: context.farreyTextPrimary),
-                        decoration: InputDecoration(
-                          hintText: 'Search notes, subjects, tags...',
-                          hintStyle: TextStyle(color: context.farreyTextSecondary.withValues(alpha: 0.6)),
-                          prefixIcon: Icon(Icons.search_rounded, color: context.farreyTextSecondary),
-                          suffixIcon: IconButton(
-                            icon: Icon(Icons.clear_rounded, color: context.farreyTextSecondary),
-                            onPressed: () {
-                              _searchController.clear();
-                              _performSearch('');
-                            },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.search_rounded, color: context.farreyTextSecondary),
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 180,
+                            child: TextField(
+                              controller: _searchController,
+                              style: TextStyle(color: context.farreyTextPrimary),
+                              decoration: InputDecoration(
+                                hintText: 'Search notes, subjects...',
+                                hintStyle: TextStyle(color: context.farreyTextSecondary),
+                                border: InputBorder.none,
+                                isDense: true,
+                              ),
+                              onChanged: _performSearch,
+                            ),
                           ),
-                          filled: false,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                          border: InputBorder.none,
-                        ),
-                        onSubmitted: _performSearch,
+                          if (_searchController.text.isNotEmpty)
+                            IconButton(
+                              icon: Icon(Icons.close_rounded, color: context.farreyTextSecondary, size: 20),
+                              onPressed: () {
+                                _searchController.clear();
+                                _performSearch('');
+                                FocusScope.of(context).unfocus();
+                              },
+                              splashRadius: 20,
+                              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                              padding: EdgeInsets.zero,
+                            ),
+                          const SizedBox(width: 4),
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: context.farreySecondary.withValues(alpha: 0.1),
+                            ),
+                            child: IconButton(
+                              icon: Icon(
+                                context.isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                                color: context.farreySecondary,
+                              ),
+                              onPressed: () {
+                                context.read<ThemeProvider>().toggleTheme();
+                              },
+                              splashRadius: 20,
+                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                              padding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

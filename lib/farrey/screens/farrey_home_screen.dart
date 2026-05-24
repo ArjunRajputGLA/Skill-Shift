@@ -4,6 +4,8 @@ import '../theme/farrey_colors.dart';
 import '../widgets/note_card.dart';
 import '../models/farrey_models.dart';
 import '../services/farrey_database_service.dart';
+import 'package:provider/provider.dart';
+import '../../theme/theme_provider.dart';
 
 class FarreyHomeScreen extends StatefulWidget {
   const FarreyHomeScreen({super.key});
@@ -50,23 +52,21 @@ class _FarreyHomeScreenState extends State<FarreyHomeScreen> {
           ),
           
           // Floating Header
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
+          Align(
+            alignment: Alignment.topCenter,
             child: SafeArea(
               bottom: false,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(30),
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                       decoration: BoxDecoration(
                         color: context.farreySurface.withValues(alpha: context.isDark ? 0.7 : 0.8),
-                        borderRadius: BorderRadius.circular(24),
+                        borderRadius: BorderRadius.circular(30),
                         border: Border.all(
                           color: context.isDark 
                               ? Colors.white.withValues(alpha: 0.05) 
@@ -74,17 +74,37 @@ class _FarreyHomeScreenState extends State<FarreyHomeScreen> {
                         ),
                       ),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             'Notes Ecosystem',
                             style: TextStyle(
                               color: context.farreyTextPrimary,
                               fontWeight: FontWeight.w900,
-                              fontSize: 22,
+                              fontSize: 18,
                               letterSpacing: -0.5,
                             ),
                           ),
+                          const SizedBox(width: 16),
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: context.farreySecondary.withValues(alpha: 0.1),
+                            ),
+                            child: IconButton(
+                              icon: Icon(
+                                context.isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                                color: context.farreySecondary,
+                              ),
+                              onPressed: () {
+                                context.read<ThemeProvider>().toggleTheme();
+                              },
+                              splashRadius: 20,
+                              constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                              padding: EdgeInsets.zero,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
                           Container(
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
@@ -93,7 +113,9 @@ class _FarreyHomeScreenState extends State<FarreyHomeScreen> {
                             child: IconButton(
                               icon: Icon(Icons.notifications_none_rounded, color: context.farreyPrimary),
                               onPressed: () {},
-                              splashRadius: 24,
+                              splashRadius: 20,
+                              constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                              padding: EdgeInsets.zero,
                             ),
                           ),
                         ],
