@@ -65,7 +65,7 @@ class _FarreyMainLayoutState extends State<FarreyMainLayout> {
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: context.farreySurface.withValues(alpha: context.isDark ? 0.7 : 0.8),
                   borderRadius: BorderRadius.circular(30),
@@ -78,16 +78,19 @@ class _FarreyMainLayoutState extends State<FarreyMainLayout> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      _titles[_currentIndex],
-                      style: TextStyle(
-                        color: context.farreyTextPrimary,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 16,
-                        letterSpacing: -0.5,
+                    Flexible(
+                      child: Text(
+                        _titles[_currentIndex],
+                        style: TextStyle(
+                          color: context.farreyTextPrimary,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16,
+                          letterSpacing: -0.5,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 12),
                     Container(
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
@@ -220,11 +223,11 @@ class _FloatingGlassNav extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              Expanded(child: _NavItem(icon: Icons.home_rounded, label: 'Home', index: 0, currentIndex: currentIndex, onTap: onTap)),
-              Expanded(child: _NavItem(icon: Icons.search_rounded, label: 'Explore', index: 1, currentIndex: currentIndex, onTap: onTap)),
-              Expanded(child: _NavItem(icon: Icons.add_circle_rounded, label: 'Upload', index: 2, currentIndex: currentIndex, onTap: onTap)),
-              Expanded(child: _NavItem(icon: Icons.bookmark_rounded, label: 'Saved', index: 3, currentIndex: currentIndex, onTap: onTap)),
-              Expanded(child: _NavItem(icon: Icons.person_rounded, label: 'Profile', index: 4, currentIndex: currentIndex, onTap: onTap)),
+              _NavItem(icon: Icons.home_rounded, label: 'Home', index: 0, currentIndex: currentIndex, onTap: onTap),
+              _NavItem(icon: Icons.search_rounded, label: 'Explore', index: 1, currentIndex: currentIndex, onTap: onTap),
+              _NavItem(icon: Icons.add_circle_rounded, label: 'Upload', index: 2, currentIndex: currentIndex, onTap: onTap),
+              _NavItem(icon: Icons.bookmark_rounded, label: 'Saved', index: 3, currentIndex: currentIndex, onTap: onTap),
+              _NavItem(icon: Icons.person_rounded, label: 'Profile', index: 4, currentIndex: currentIndex, onTap: onTap),
             ],
           ),
         ),
