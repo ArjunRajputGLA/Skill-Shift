@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
@@ -59,11 +60,24 @@ class _FarreyUploadScreenState extends State<FarreyUploadScreen> {
 
     setState(() => _isUploading = true);
 
-    final currentUser = context.read<AuthService>().currentUser;
-    if (currentUser == null) {
-      setState(() => _isUploading = false);
+    final authServiceUser = context.read<AuthService>().currentUser;
+    final fbUser = FirebaseAuth.instance.currentUser;
+    
+    if (authServiceUser == null && fbUser == null) {
+      if (mounted) {
+        setState(() => _isUploading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('You are not logged in. Please log in to upload notes.'),
+            backgroundColor: context.farreyError,
+          ),
+        );
+      }
       return;
     }
+
+    final uploaderUid = authServiceUser?.id ?? fbUser!.uid;
+    final uploaderName = authServiceUser?.fullName ?? fbUser?.displayName ?? 'Anonymous User';
 
     try {
       final fileUrl = await _storageService.uploadNoteFile(_selectedFile!, _fileExtension ?? 'pdf');
@@ -73,8 +87,8 @@ class _FarreyUploadScreenState extends State<FarreyUploadScreen> {
 
       final newNote = FarreyNoteModel(
         noteId: noteId,
-        uploaderUid: currentUser.id,
-        uploaderName: currentUser.fullName,
+        uploaderUid: uploaderUid,
+        uploaderName: uploaderName,
         title: _titleController.text.trim(),
         description: _descController.text.trim(),
         subject: _subjectController.text.trim(),
