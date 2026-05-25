@@ -67,10 +67,6 @@ class _FarreyUploadScreenState extends State<FarreyUploadScreen> {
 
     try {
       final fileUrl = await _storageService.uploadNoteFile(_selectedFile!, _fileExtension ?? 'pdf');
-      
-      if (fileUrl == null) {
-        throw Exception('Failed to upload file to storage');
-      }
 
       final noteId = DateTime.now().millisecondsSinceEpoch.toString();
       final tagsList = _tagsController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
@@ -188,13 +184,18 @@ class _FarreyUploadScreenState extends State<FarreyUploadScreen> {
                                     color: _selectedFile == null ? context.farreyPrimary : context.farreySuccess,
                                   ),
                                   const SizedBox(height: 8),
-                                  Text(
-                                    _selectedFile == null ? 'Tap to browse files' : 'File selected: ${_selectedFile!.path.split('\\').last}',
-                                    style: TextStyle(
-                                      color: _selectedFile == null ? context.farreyPrimary : context.farreySuccess,
-                                      fontWeight: FontWeight.w600,
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                                    child: Text(
+                                      _selectedFile == null ? 'Tap to browse files' : 'File selected: ${_selectedFile!.path.split(RegExp(r'[/\\]')).last}',
+                                      style: TextStyle(
+                                        color: _selectedFile == null ? context.farreyPrimary : context.farreySuccess,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    textAlign: TextAlign.center,
                                   ),
                                 ],
                               ),
