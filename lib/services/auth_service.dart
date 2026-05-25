@@ -143,9 +143,6 @@ class AuthService extends ChangeNotifier {
   Future<String?> signIn({required String email, required String password}) async {
     try {
       final cred = await _auth.signInWithEmailAndPassword(email: email, password: password);
-      if (cred.user != null) {
-        await _fetchUserProfile(cred.user!.uid);
-      }
       return null;
     } on FirebaseAuthException catch (e) {
       return NotificationService.getAuthErrorMessage(e.code);
@@ -189,7 +186,6 @@ class AuthService extends ChangeNotifier {
           debugPrint('Firestore timeout during Google Sign-in sync: $e');
         }
         
-        await _fetchUserProfile(user.uid);
         return null;
       }
       return 'Failed to authenticate with Google';
