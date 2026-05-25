@@ -139,173 +139,113 @@ class _FarreyUploadScreenState extends State<FarreyUploadScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.farreyBackground,
-      body: Stack(
-        children: [
-          // Content
-          _isUploading
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularProgressIndicator(color: context.farreyPrimary),
-                      const SizedBox(height: 16),
-                      Text('Uploading your note to Notes Ecosystem...', style: TextStyle(color: context.farreyTextSecondary)),
-                    ],
-                  ),
-                )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.only(top: 110, left: 24, right: 24, bottom: 120),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // File Picker Area
-                        GestureDetector(
-                          onTap: _pickFile,
-                          child: Container(
-                            height: 120,
-                            decoration: BoxDecoration(
-                              color: context.farreySurface,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: _selectedFile == null ? context.farreyPrimary.withValues(alpha: 0.3) : context.farreySuccess,
-                                style: BorderStyle.solid,
-                                width: 2,
-                              ),
-                            ),
-                            child: Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    _selectedFile == null ? Icons.cloud_upload_outlined : Icons.check_circle_outline,
-                                    size: 40,
-                                    color: _selectedFile == null ? context.farreyPrimary : context.farreySuccess,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                                    child: Text(
-                                      _selectedFile == null ? 'Tap to browse files' : 'File selected: ${_selectedFile!.path.split(RegExp(r'[/\\]')).last}',
-                                      style: TextStyle(
-                                        color: _selectedFile == null ? context.farreyPrimary : context.farreySuccess,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        
-                        _buildTextField(context, _titleController, 'Title', 'E.g., Operating Systems Unit 1'),
-                        const SizedBox(height: 16),
-                        _buildTextField(context, _descController, 'Description', 'What is this note about?', maxLines: 3),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(child: _buildTextField(context, _subjectController, 'Subject', 'E.g., OS')),
-                            const SizedBox(width: 16),
-                            Expanded(child: _buildTextField(context, _semesterController, 'Semester', 'E.g., 5th')),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        _buildTextField(context, _branchController, 'Branch', 'E.g., Computer Science'),
-                        const SizedBox(height: 16),
-                        _buildTextField(context, _tagsController, 'Tags (Comma separated)', 'E.g., scheduling, threads, memory'),
-                        const SizedBox(height: 32),
-
-                        ElevatedButton(
-                          onPressed: _uploadNote,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: context.farreyPrimary,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            elevation: 0,
-                          ),
-                          child: const Text(
-                            'Upload to Ecosystem',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+      body: RefreshIndicator(
+        color: context.farreyPrimary,
+        onRefresh: () async {
+          await Future.delayed(const Duration(seconds: 1));
+          setState(() {});
+        },
+        child: _isUploading
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(color: context.farreyPrimary),
+                    const SizedBox(height: 16),
+                    Text('Uploading your note to Notes Ecosystem...', style: TextStyle(color: context.farreyTextSecondary)),
+                  ],
                 ),
-                
-          // Floating Header
-          Align(
-            alignment: Alignment.topCenter,
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: context.farreySurface.withValues(alpha: context.isDark ? 0.7 : 0.8),
-                        borderRadius: BorderRadius.circular(30),
-                        border: Border.all(
-                          color: context.isDark 
-                              ? Colors.white.withValues(alpha: 0.05) 
-                              : Colors.black.withValues(alpha: 0.05),
+              )
+            : SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                padding: const EdgeInsets.only(top: 110, left: 24, right: 24, bottom: 120),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // File Picker Area
+                      GestureDetector(
+                        onTap: _pickFile,
+                        child: Container(
+                          height: 120,
+                          decoration: BoxDecoration(
+                            color: context.farreySurface,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: _selectedFile == null ? context.farreyPrimary.withValues(alpha: 0.3) : context.farreySuccess,
+                              style: BorderStyle.solid,
+                              width: 2,
+                            ),
+                          ),
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  _selectedFile == null ? Icons.cloud_upload_outlined : Icons.check_circle_outline,
+                                  size: 40,
+                                  color: _selectedFile == null ? context.farreyPrimary : context.farreySuccess,
+                                ),
+                                const SizedBox(height: 8),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                                  child: Text(
+                                    _selectedFile == null ? 'Tap to browse files' : 'File selected: ${_selectedFile!.path.split(RegExp(r'[/\\]')).last}',
+                                    style: TextStyle(
+                                      color: _selectedFile == null ? context.farreyPrimary : context.farreySuccess,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                      const SizedBox(height: 24),
+                      
+                      _buildTextField(context, _titleController, 'Title', 'E.g., Operating Systems Unit 1'),
+                      const SizedBox(height: 16),
+                      _buildTextField(context, _descController, 'Description', 'What is this note about?', maxLines: 3),
+                      const SizedBox(height: 16),
+                      Row(
                         children: [
-                          Text(
-                            'Upload Note',
-                            style: TextStyle(
-                              color: context.farreyTextPrimary,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 16,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
+                          Expanded(child: _buildTextField(context, _subjectController, 'Subject', 'E.g., OS')),
                           const SizedBox(width: 16),
-                          Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: context.farreySecondary.withValues(alpha: 0.1),
-                            ),
-                            child: IconButton(
-                              icon: Icon(
-                                context.isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                                color: context.farreySecondary,
-                                size: 18,
-                              ),
-                              onPressed: () {
-                                context.read<ThemeProvider>().toggleTheme();
-                              },
-                              splashRadius: 20,
-                              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                              padding: EdgeInsets.zero,
-                            ),
-                          ),
+                          Expanded(child: _buildTextField(context, _semesterController, 'Semester', 'E.g., 5th')),
                         ],
                       ),
-                    ),
+                      const SizedBox(height: 16),
+                      _buildTextField(context, _branchController, 'Branch', 'E.g., Computer Science'),
+                      const SizedBox(height: 16),
+                      _buildTextField(context, _tagsController, 'Tags (Comma separated)', 'E.g., scheduling, threads, memory'),
+                      const SizedBox(height: 32),
+
+                      ElevatedButton(
+                        onPressed: _uploadNote,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: context.farreyPrimary,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'Upload to Ecosystem',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ),
-          ),
-        ],
       ),
     );
   }

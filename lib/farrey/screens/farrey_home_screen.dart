@@ -25,109 +25,34 @@ class _FarreyHomeScreenState extends State<FarreyHomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.farreyBackground,
-      body: Stack(
-        children: [
-          // Main Scrollable Content
-          SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.only(top: 120, bottom: 100), // Padding for floating header and footer
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildCategories(context),
-                const SizedBox(height: 32),
-                _buildSection(
-                  context: context,
-                  title: 'Trending Notes',
-                  stream: _dbService.getTrendingNotes(),
-                ),
-                const SizedBox(height: 32),
-                _buildSection(
-                  context: context,
-                  title: 'Recently Uploaded',
-                  stream: _dbService.getRecentNotes(),
-                ),
-              ],
-            ),
-          ),
-          
-          // Floating Header
-          Align(
-            alignment: Alignment.topCenter,
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: context.farreySurface.withValues(alpha: context.isDark ? 0.7 : 0.8),
-                        borderRadius: BorderRadius.circular(30),
-                        border: Border.all(
-                          color: context.isDark 
-                              ? Colors.white.withValues(alpha: 0.05) 
-                              : Colors.black.withValues(alpha: 0.05),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Notes Ecosystem',
-                            style: TextStyle(
-                              color: context.farreyTextPrimary,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 16,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: context.farreySecondary.withValues(alpha: 0.1),
-                            ),
-                            child: IconButton(
-                              icon: Icon(
-                                context.isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                                color: context.farreySecondary,
-                                size: 18,
-                              ),
-                              onPressed: () {
-                                context.read<ThemeProvider>().toggleTheme();
-                              },
-                              splashRadius: 20,
-                              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                              padding: EdgeInsets.zero,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: context.farreyPrimary.withValues(alpha: 0.1),
-                            ),
-                            child: IconButton(
-                              icon: Icon(Icons.notifications_none_rounded, color: context.farreyPrimary, size: 18),
-                              onPressed: () {},
-                              splashRadius: 20,
-                              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                              padding: EdgeInsets.zero,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+      body: RefreshIndicator(
+        color: context.farreyPrimary,
+        onRefresh: () async {
+          await Future.delayed(const Duration(seconds: 1));
+          setState(() {});
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+          padding: const EdgeInsets.only(top: 110, bottom: 100),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildCategories(context),
+              const SizedBox(height: 32),
+              _buildSection(
+                context: context,
+                title: 'Trending Notes',
+                stream: _dbService.getTrendingNotes(),
               ),
-            ),
+              const SizedBox(height: 32),
+              _buildSection(
+                context: context,
+                title: 'Recently Uploaded',
+                stream: _dbService.getRecentNotes(),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

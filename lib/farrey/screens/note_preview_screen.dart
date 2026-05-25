@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
@@ -83,12 +84,15 @@ class _NotePreviewScreenState extends State<NotePreviewScreen> {
               backgroundColor: context.farreySurface,
               content: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: List.generate(5, (index) {
                   return IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                     icon: Icon(
                       index < selectedRating ? Icons.star_rounded : Icons.star_border_rounded,
                       color: context.farreyWarning,
-                      size: 36,
+                      size: 28,
                     ),
                     onPressed: () {
                       setDialogState(() {
@@ -146,14 +150,11 @@ class _NotePreviewScreenState extends State<NotePreviewScreen> {
                   color: context.farreySurfaceElevated,
                   child: isPdf
                       ? SfPdfViewer.network(widget.note.fileUrl)
-                      : Image.network(
-                          widget.note.fileUrl,
+                      : CachedNetworkImage(
+                          imageUrl: widget.note.fileUrl,
                           fit: BoxFit.contain,
-                          loadingBuilder: (context, child, progress) {
-                            if (progress == null) return child;
-                            return Center(child: CircularProgressIndicator(color: context.farreyPrimary));
-                          },
-                          errorBuilder: (context, error, stackTrace) => Center(
+                          placeholder: (context, url) => Center(child: CircularProgressIndicator(color: context.farreyPrimary)),
+                          errorWidget: (context, url, error) => Center(
                             child: Text('Failed to load image', style: TextStyle(color: context.farreyError)),
                           ),
                         ),
