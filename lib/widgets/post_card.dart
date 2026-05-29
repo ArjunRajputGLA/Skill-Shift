@@ -12,6 +12,7 @@ import 'glass_card.dart';
 import 'avatar_widget.dart';
 import 'custom_chip.dart';
 import 'duolingo_button.dart';
+import 'connect_dialog.dart';
 
 class PostCard extends StatefulWidget {
   final String ownerUid;
@@ -223,68 +224,10 @@ class _PostCardState extends State<PostCard> {
                                   showDialog(
                                     context: context,
                                     builder: (BuildContext dialogContext) {
-                                      return AlertDialog(
-                                        title: Text('Connect with ${widget.userName}?'),
-                                        content: const Text('How would you like to connect?'),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () => Navigator.of(dialogContext).pop(),
-                                            child: const Text('Cancel'),
-                                          ),
-                                          TextButton(
-                                            onPressed: () {
-                                              Navigator.of(dialogContext).pop();
-                                              final String chatId = currentUser.id.compareTo(widget.ownerUid) < 0
-                                                  ? '${currentUser.id}_${widget.ownerUid}'
-                                                  : '${widget.ownerUid}_${currentUser.id}';
-
-                                              Navigator.of(context).push(
-                                                MaterialPageRoute(
-                                                  builder: (_) => ChatDetailScreen(
-                                                    chatId: chatId,
-                                                    targetUserName: widget.userName,
-                                                    targetUserId: widget.ownerUid,
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                            child: const Text('Start Conversation'),
-                                          ),
-                                          FilledButton(
-                                            onPressed: () async {
-                                              Navigator.of(dialogContext).pop();
-                                              
-                                              NotificationService.showLoading(context);
-                                              
-                                              try {
-                                                final doc = await FirebaseFirestore.instance.collection('users').doc(widget.ownerUid).get();
-                                                if (context.mounted) {
-                                                  NotificationService.hideLoading(context);
-                                                  
-                                                  if (doc.exists) {
-                                                    final data = doc.data() as Map<String, dynamic>;
-                                                    final targetWhatsApp = data['whatsapp'] ?? '';
-                                                    
-                                                    await WhatsAppService.openWhatsApp(
-                                                      context: context, 
-                                                      phoneNumber: targetWhatsApp,
-                                                      userName: widget.userName,
-                                                      postTitle: widget.title,
-                                                    );
-                                                  } else {
-                                                    NotificationService.showError(context, "User not found.");
-                                                  }
-                                                }
-                                              } catch (e) {
-                                                if (context.mounted) {
-                                                  NotificationService.hideLoading(context);
-                                                  NotificationService.showError(context, "Failed to fetch user data.");
-                                                }
-                                              }
-                                            },
-                                            child: const Text('Open WhatsApp'),
-                                          ),
-                                        ],
+                                      return ConnectDialog(
+                                        targetUserId: widget.ownerUid,
+                                        targetUserName: widget.userName,
+                                        sourceTitle: widget.title,
                                       );
                                     },
                                   );

@@ -77,14 +77,24 @@ class NoteCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Icon(Icons.star_rounded, color: context.farreyWarning, size: 16),
+                      Icon(Icons.star_rounded, color: context.farreyWarning, size: 14),
                       const SizedBox(width: 4),
                       Text(
                         note.averageRating.toStringAsFixed(1),
                         style: TextStyle(
                           color: context.farreyTextSecondary,
-                          fontSize: 12,
+                          fontSize: 11,
                           fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const Spacer(),
+                      Icon(Icons.chat_bubble_outline_rounded, color: context.farreyTextSecondary, size: 12),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${note.totalComments}',
+                        style: TextStyle(
+                          color: context.farreyTextSecondary,
+                          fontSize: 11,
                         ),
                       ),
                       const Spacer(),
@@ -94,7 +104,7 @@ class NoteCard extends StatelessWidget {
                         '${note.totalDownloads}',
                         style: TextStyle(
                           color: context.farreyTextSecondary,
-                          fontSize: 12,
+                          fontSize: 11,
                         ),
                       ),
                     ],

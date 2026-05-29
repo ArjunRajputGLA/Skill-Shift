@@ -7,12 +7,22 @@ class FarreyStorageService {
   final Uuid _uuid = const Uuid();
 
   /// Uploads a file (PDF or Image) to Firebase Storage under farrey_notes/
-  Future<String> uploadNoteFile(File file, String fileExtension) async {
+  Future<String> uploadNoteFile(File file, String fileExtension, {Function(double)? onProgress}) async {
     try {
       final String fileName = '${_uuid.v4()}.$fileExtension';
       final Reference ref = _storage.ref().child('farrey_notes').child(fileName);
       
       final UploadTask uploadTask = ref.putFile(file);
+      
+      if (onProgress != null) {
+        uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+          if (snapshot.totalBytes > 0) {
+            final progress = snapshot.bytesTransferred / snapshot.totalBytes;
+            onProgress(progress);
+          }
+        });
+      }
+      
       final TaskSnapshot snapshot = await uploadTask;
       
       final String downloadUrl = await snapshot.ref.getDownloadURL();

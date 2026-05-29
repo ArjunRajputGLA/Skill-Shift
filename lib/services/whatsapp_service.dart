@@ -31,28 +31,24 @@ class WhatsAppService {
       final message = 'Hi $userName, I saw your post on Skill Shift:\n\n"$postTitle"\n\nand would like to connect.';
       
       // WhatsApp deep link URL
-      // Use standard wa.me link first
-      final Uri whatsappUri = Uri.parse('https://wa.me/$cleanPhone?text=${Uri.encodeComponent(message)}');
+      final Uri appUri = Uri.parse('whatsapp://send?phone=$cleanPhone&text=${Uri.encodeComponent(message)}');
+      final Uri webUri = Uri.parse('https://wa.me/$cleanPhone?text=${Uri.encodeComponent(message)}');
 
-      // Attempt to launch the URL
-      if (await canLaunchUrl(whatsappUri)) {
-        await launchUrl(
-          whatsappUri,
-          mode: LaunchMode.externalApplication,
-        );
-      } else {
-        // Fallback to whatsapp:// scheme directly
-        final Uri appUri = Uri.parse('whatsapp://send?phone=$cleanPhone&text=${Uri.encodeComponent(message)}');
-        if (await canLaunchUrl(appUri)) {
-          await launchUrl(
-            appUri,
-            mode: LaunchMode.externalApplication,
-          );
-        } else {
+      try {
+        // Try native app first
+        final launched = await launchUrl(appUri, mode: LaunchMode.externalNonBrowserApplication);
+        if (!launched) {
+          // Fallback to web link
+          await launchUrl(webUri, mode: LaunchMode.externalApplication);
+        }
+      } catch (_) {
+        try {
+          await launchUrl(webUri, mode: LaunchMode.externalApplication);
+        } catch (e) {
           if (context.mounted) {
             NotificationService.showError(
               context, 
-              "Could not open WhatsApp. Ensure it is installed on your device."
+              "Could not open WhatsApp. Ensure it is installed."
             );
           }
         }

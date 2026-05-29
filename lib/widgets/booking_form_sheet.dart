@@ -99,7 +99,9 @@ class _BookingFormSheetState extends State<BookingFormSheet> {
         left: AppSpacing.lg,
         right: AppSpacing.lg,
         top: AppSpacing.lg,
-        bottom: bottomInset > 0 ? bottomInset + AppSpacing.md : AppSpacing.xxl,
+        bottom: bottomInset > 0 
+            ? bottomInset + AppSpacing.md 
+            : MediaQuery.of(context).padding.bottom + AppSpacing.xxl,
       ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,

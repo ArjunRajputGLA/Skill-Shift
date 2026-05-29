@@ -14,12 +14,15 @@ class FarreyExploreScreen extends StatefulWidget {
   State<FarreyExploreScreen> createState() => _FarreyExploreScreenState();
 }
 
-class _FarreyExploreScreenState extends State<FarreyExploreScreen> {
+class _FarreyExploreScreenState extends State<FarreyExploreScreen> with AutomaticKeepAliveClientMixin {
   final TextEditingController _searchController = TextEditingController();
   final FarreyDatabaseService _dbService = FarreyDatabaseService();
   
   List<FarreyNoteModel> _searchResults = [];
   bool _isSearching = false;
+
+  @override
+  bool get wantKeepAlive => true;
 
   void _performSearch(String query) async {
     if (query.trim().isEmpty) {
@@ -49,15 +52,14 @@ class _FarreyExploreScreenState extends State<FarreyExploreScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       backgroundColor: context.farreyBackground,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 80.0, left: 16, right: 16, bottom: 16),
-              child: Container(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 0.0, left: 16, right: 16, bottom: 16),
+            child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 decoration: BoxDecoration(
                   color: context.farreySurface.withValues(alpha: context.isDark ? 0.7 : 0.8),
@@ -80,6 +82,9 @@ class _FarreyExploreScreenState extends State<FarreyExploreScreen> {
                           hintText: 'Search notes, subjects...',
                           hintStyle: TextStyle(color: context.farreyTextSecondary, fontSize: 14),
                           border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          filled: false,
                           isDense: true,
                           contentPadding: const EdgeInsets.symmetric(vertical: 8),
                         ),
@@ -165,7 +170,6 @@ class _FarreyExploreScreenState extends State<FarreyExploreScreen> {
             ),
           ],
         ),
-      ),
     );
   }
 }

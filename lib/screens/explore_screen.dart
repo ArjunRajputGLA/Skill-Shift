@@ -17,11 +17,14 @@ class ExploreScreen extends StatefulWidget {
   State<ExploreScreen> createState() => _ExploreScreenState();
 }
 
-class _ExploreScreenState extends State<ExploreScreen> {
+class _ExploreScreenState extends State<ExploreScreen> with AutomaticKeepAliveClientMixin {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   String _searchQuery = '';
-  String _selectedCategory = 'All';
+  final List<String> _selectedCategories = ['All'];
+
+  @override
+  bool get wantKeepAlive => true;
 
   final List<String> _categories = [
     'All', 'Coding', 'Design', 'Academics', 'Fitness', 
@@ -133,6 +136,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -178,12 +182,14 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 if (user != null && post.uid == user.id) return false;
 
                 bool categoryMatch = true;
-                if (_selectedCategory != 'All') {
-                  final catLower = _selectedCategory.toLowerCase();
-                  final inTags = post.tags.any((tag) => tag.toLowerCase() == catLower);
-                  final inType = post.postType.toLowerCase() == catLower;
-                  final inTitleDesc = post.title.toLowerCase().contains(catLower) || 
-                                      post.description.toLowerCase().contains(catLower);
+                if (!_selectedCategories.contains('All')) {
+                  final inTags = post.tags.any((tag) => _selectedCategories.any((sc) => sc.toLowerCase() == tag.toLowerCase()));
+                  final inType = _selectedCategories.any((sc) => sc.toLowerCase() == post.postType.toLowerCase());
+                  final inTitleDesc = _selectedCategories.any((sc) {
+                    final catLower = sc.toLowerCase();
+                    return post.title.toLowerCase().contains(catLower) || 
+                           post.description.toLowerCase().contains(catLower);
+                  });
                   categoryMatch = inTags || inType || inTitleDesc;
                 }
 
@@ -204,7 +210,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   child: EmptyStateWidget(
                     icon: Icons.manage_search,
                     title: 'No Matches',
-                    message: 'We couldn\'t find anything for "$_searchQuery" in $_selectedCategory.',
+                    message: 'We couldn\'t find anything for "$_searchQuery" in ${_selectedCategories.join(", ")}.',
                   ),
                 );
               } else {
@@ -313,46 +319,57 @@ class _ExploreScreenState extends State<ExploreScreen> {
                               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                               itemCount: _categories.length * 1000,
                               itemBuilder: (context, index) {
-                                final category = _categories[index % _categories.length];
-                                final isSelected = _selectedCategory == category;
-                                
-                                double startX = 0;
-                                double startY = 0;
+                                 final category = _categories[index % _categories.length];
+                                 final isSelected = _selectedCategories.contains(category);
+                                 
+                                 double startX = 0;
+                                 double startY = 0;
 
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                                  child: Listener(
-                                    onPointerDown: (e) {
-                                      startX = e.position.dx;
-                                      startY = e.position.dy;
-                                    },
-                                    onPointerUp: (e) {
-                                      final distance = (e.position.dx - startX).abs() + (e.position.dy - startY).abs();
-                                      if (distance < 10) {
-                                        if (_selectedCategory != category) {
-                                          setState(() {
-                                            _selectedCategory = category;
-                                          });
-                                        }
-                                        Future.delayed(const Duration(milliseconds: 100), () {
-                                          if (mounted && _searchQuery.isEmpty) _startAutoScroll();
-                                        });
-                                      }
-                                    },
-                                    child: CustomChip(
-                                      label: category,
-                                      isSelected: isSelected,
-                                      variant: ChipVariant.filled,
-                                      onTap: () {
-                                        if (_selectedCategory != category) {
-                                          setState(() {
-                                            _selectedCategory = category;
-                                          });
-                                        }
-                                      },
-                                    ),
-                                  ),
-                                );
+                                 void toggleCategory() {
+                                   setState(() {
+                                     if (category == 'All') {
+                                       _selectedCategories.clear();
+                                       _selectedCategories.add('All');
+                                     } else {
+                                       if (_selectedCategories.contains('All')) {
+                                         _selectedCategories.remove('All');
+                                       }
+                                       if (_selectedCategories.contains(category)) {
+                                         _selectedCategories.remove(category);
+                                         if (_selectedCategories.isEmpty) _selectedCategories.add('All');
+                                       } else {
+                                         _selectedCategories.add(category);
+                                       }
+                                     }
+                                   });
+                                 }
+
+                                 return Padding(
+                                   padding: const EdgeInsets.symmetric(horizontal: 4),
+                                   child: Listener(
+                                     onPointerDown: (e) {
+                                       startX = e.position.dx;
+                                       startY = e.position.dy;
+                                     },
+                                     onPointerUp: (e) {
+                                       final distance = (e.position.dx - startX).abs() + (e.position.dy - startY).abs();
+                                       if (distance < 10) {
+                                         toggleCategory();
+                                         Future.delayed(const Duration(milliseconds: 100), () {
+                                           if (mounted && _searchQuery.isEmpty) _startAutoScroll();
+                                         });
+                                       }
+                                     },
+                                     child: CustomChip(
+                                       label: category,
+                                       isSelected: isSelected,
+                                       variant: ChipVariant.filled,
+                                       onTap: () {
+                                         // Handled by Listener above to distinguish from scrolling
+                                       },
+                                     ),
+                                   ),
+                                 );
                               },
                             ),
                           ),

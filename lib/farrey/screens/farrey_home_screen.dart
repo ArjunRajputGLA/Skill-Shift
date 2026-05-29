@@ -6,6 +6,8 @@ import '../models/farrey_models.dart';
 import '../services/farrey_database_service.dart';
 import 'package:provider/provider.dart';
 import '../../theme/theme_provider.dart';
+import '../../services/auth_service.dart';
+import 'farrey_see_all_screen.dart';
 
 class FarreyHomeScreen extends StatefulWidget {
   const FarreyHomeScreen({super.key});
@@ -14,15 +16,58 @@ class FarreyHomeScreen extends StatefulWidget {
   State<FarreyHomeScreen> createState() => _FarreyHomeScreenState();
 }
 
-class _FarreyHomeScreenState extends State<FarreyHomeScreen> {
+class _FarreyHomeScreenState extends State<FarreyHomeScreen> with AutomaticKeepAliveClientMixin {
   final FarreyDatabaseService _dbService = FarreyDatabaseService();
+  final ScrollController _scrollController = ScrollController();
 
   final List<String> _categories = [
-    'DSA', 'Flutter', 'DBMS', 'OS', 'CN', 'ML', 'Mathematics', 'Placement', 'Interview Prep'
+    'DSA', 'Flutter', 'DBMS', 'OS', 'CN', 'ML', 'Mathematics', 'Placement', 'Interview Prep',
+    'AI', 'Data Science', 'System Design', 'Web Dev', 'App Dev', 'UI/UX', 'Cloud Computing',
+    'Cybersecurity', 'Blockchain', 'Competitive Programming', 'Software Engineering'
   ];
+  final List<String> _selectedCategories = [];
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startAutoScroll();
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _startAutoScroll() {
+    if (!mounted || !_scrollController.hasClients) return;
+    
+    final currentPosition = _scrollController.position.pixels;
+    final maxExtent = _scrollController.position.maxScrollExtent;
+    final remainingDistance = maxExtent - currentPosition;
+    
+    if (remainingDistance > 0) {
+      final durationInSeconds = (remainingDistance / 30).round();
+      if (durationInSeconds > 0) {
+        _scrollController.animateTo(
+          maxExtent,
+          duration: Duration(seconds: durationInSeconds),
+          curve: Curves.linear,
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+    final currentUserId = context.read<AuthService>().currentUser?.id ?? '';
+
     return Scaffold(
       backgroundColor: context.farreyBackground,
       body: RefreshIndicator(
@@ -33,7 +78,7 @@ class _FarreyHomeScreenState extends State<FarreyHomeScreen> {
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-          padding: const EdgeInsets.only(top: 110, bottom: 100),
+          padding: const EdgeInsets.only(top: 16, bottom: 100),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -41,14 +86,14 @@ class _FarreyHomeScreenState extends State<FarreyHomeScreen> {
               const SizedBox(height: 32),
               _buildSection(
                 context: context,
-                title: 'Trending Notes',
-                stream: _dbService.getTrendingNotes(),
+                title: _selectedCategories.isEmpty ? 'Trending Notes' : 'Trending in ${_selectedCategories.length} selected',
+                stream: _dbService.getTrendingNotes(currentUserId, categories: _selectedCategories),
               ),
               const SizedBox(height: 32),
               _buildSection(
                 context: context,
-                title: 'Recently Uploaded',
-                stream: _dbService.getRecentNotes(),
+                title: _selectedCategories.isEmpty ? 'Recently Uploaded' : 'Recent in ${_selectedCategories.length} selected',
+                stream: _dbService.getRecentNotes(currentUserId, categories: _selectedCategories),
               ),
             ],
           ),
@@ -60,31 +105,59 @@ class _FarreyHomeScreenState extends State<FarreyHomeScreen> {
   Widget _buildCategories(BuildContext context) {
     return SizedBox(
       height: 40,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _categories.length,
-        itemBuilder: (context, index) {
-          return Container(
-            margin: const EdgeInsets.only(right: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            decoration: BoxDecoration(
-              color: context.farreySurfaceElevated,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: context.farreyBorder),
-            ),
-            child: Center(
-              child: Text(
-                _categories[index],
-                style: TextStyle(
-                  color: context.farreyTextSecondary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (ScrollNotification notification) {
+          if (notification is ScrollEndNotification) {
+            _startAutoScroll();
+          }
+          return false;
+        },
+        child: ListView.builder(
+          controller: _scrollController,
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: _categories.length * 100, // Infinity simulation
+          itemBuilder: (context, index) {
+            final categoryIndex = index % _categories.length;
+            final category = _categories[categoryIndex];
+            final isSelected = _selectedCategories.contains(category);
+            
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  if (isSelected) {
+                    _selectedCategories.remove(category);
+                  } else {
+                    _selectedCategories.add(category);
+                  }
+                });
+                // Ensure scroll continues after a tiny delay to allow layout rebuild
+                Future.delayed(const Duration(milliseconds: 50), () {
+                  if (mounted) _startAutoScroll();
+                });
+              },
+              child: Container(
+                margin: const EdgeInsets.only(right: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? context.farreyPrimary : context.farreySurfaceElevated,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: isSelected ? context.farreyPrimary : context.farreyBorder),
+                ),
+                child: Center(
+                  child: Text(
+                    category,
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : context.farreyTextSecondary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -107,12 +180,25 @@ class _FarreyHomeScreenState extends State<FarreyHomeScreen> {
                   letterSpacing: -0.5,
                 ),
               ),
-              Text(
-                'See all',
-                style: TextStyle(
-                  color: context.farreyPrimary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => FarreySeeAllScreen(
+                        title: title,
+                        stream: stream,
+                      ),
+                    ),
+                  );
+                },
+                child: Text(
+                  'See all',
+                  style: TextStyle(
+                    color: context.farreyPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
                 ),
               ),
             ],

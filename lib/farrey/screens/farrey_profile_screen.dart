@@ -8,11 +8,20 @@ import '../widgets/note_card.dart';
 import '../../services/auth_service.dart';
 import '../../theme/theme_provider.dart';
 
-class FarreyProfileScreen extends StatelessWidget {
+class FarreyProfileScreen extends StatefulWidget {
   const FarreyProfileScreen({super.key});
 
   @override
+  State<FarreyProfileScreen> createState() => _FarreyProfileScreenState();
+}
+
+class _FarreyProfileScreenState extends State<FarreyProfileScreen> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     final user = context.watch<AuthService>().currentUser;
     
     if (user == null) {
@@ -28,12 +37,13 @@ class FarreyProfileScreen extends StatelessWidget {
         color: context.farreyPrimary,
         onRefresh: () async {
           await Future.delayed(const Duration(seconds: 1));
+          setState(() {});
         },
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
           slivers: [
             SliverPadding(
-              padding: const EdgeInsets.only(top: 110),
+              padding: const EdgeInsets.only(top: 16),
               sliver: SliverToBoxAdapter(
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -89,7 +99,6 @@ class FarreyProfileScreen extends StatelessWidget {
               stream: FirebaseFirestore.instance
                   .collection('farrey_notes')
                   .where('uploaderUid', isEqualTo: user.id)
-                  .orderBy('uploadTime', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -98,6 +107,14 @@ class FarreyProfileScreen extends StatelessWidget {
                   );
                 }
                 
+                if (snapshot.hasError) {
+                  return SliverFillRemaining(
+                    child: Center(
+                      child: Text('Error loading uploads.', style: TextStyle(color: context.farreyError)),
+                    ),
+                  );
+                }
+
                 final docs = snapshot.data?.docs ?? [];
                 
                 if (docs.isEmpty) {
@@ -107,6 +124,14 @@ class FarreyProfileScreen extends StatelessWidget {
                     ),
                   );
                 }
+
+                final notes = docs.map((doc) => FarreyNoteModel.fromMap(
+                  doc.data() as Map<String, dynamic>,
+                  doc.id,
+                )).toList();
+
+                // Sort locally by uploadTime descending
+                notes.sort((a, b) => b.uploadTime.compareTo(a.uploadTime));
 
                 return SliverPadding(
                   padding: const EdgeInsets.only(left: 16, right: 16, bottom: 120),
@@ -119,13 +144,9 @@ class FarreyProfileScreen extends StatelessWidget {
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
-                        final note = FarreyNoteModel.fromMap(
-                          docs[index].data() as Map<String, dynamic>,
-                          docs[index].id,
-                        );
-                        return NoteCard(note: note);
+                        return NoteCard(note: notes[index]);
                       },
-                      childCount: docs.length,
+                      childCount: notes.length,
                     ),
                   ),
                 );

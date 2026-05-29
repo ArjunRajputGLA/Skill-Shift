@@ -19,7 +19,7 @@ class FarreyUploadScreen extends StatefulWidget {
   State<FarreyUploadScreen> createState() => _FarreyUploadScreenState();
 }
 
-class _FarreyUploadScreenState extends State<FarreyUploadScreen> {
+class _FarreyUploadScreenState extends State<FarreyUploadScreen> with AutomaticKeepAliveClientMixin {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
@@ -28,75 +28,90 @@ class _FarreyUploadScreenState extends State<FarreyUploadScreen> {
   final _tagsController = TextEditingController();
   final _branchController = TextEditingController();
 
-  File? _selectedFile;
-  String? _fileExtension;
+  List<PlatformFile> _selectedFiles = [];
   bool _isUploading = false;
+  double _uploadProgress = 0.0;
 
   final FarreyDatabaseService _dbService = FarreyDatabaseService();
   final FarreyStorageService _storageService = FarreyStorageService();
+
+  @override
+  bool get wantKeepAlive => true;
 
   Future<void> _pickFile() async {
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx'],
+      allowMultiple: true,
     );
 
-    if (result != null && result.files.single.path != null) {
+    if (result != null && result.files.isNotEmpty) {
       setState(() {
-        _selectedFile = File(result.files.single.path!);
-        _fileExtension = result.files.single.extension;
+        _selectedFiles.addAll(result.files.where((f) => f.path != null));
       });
     }
   }
 
   Future<void> _uploadNote() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedFile == null) {
+    if (_selectedFiles.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: const Text('Please select a file to upload.', style: TextStyle(color: Colors.white)), backgroundColor: context.farreyError),
+        SnackBar(content: const Text('Please select at least one file to upload.', style: TextStyle(color: Colors.white)), backgroundColor: context.farreyError),
       );
       return;
     }
 
-    setState(() => _isUploading = true);
-
-    final authServiceUser = context.read<AuthService>().currentUser;
-    final fbUser = FirebaseAuth.instance.currentUser;
+    setState(() {
+      _isUploading = true;
+      _uploadProgress = 0.0;
+    });
     
-    if (authServiceUser == null && fbUser == null) {
-      if (mounted) {
-        setState(() => _isUploading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('You are not logged in. Please log in to upload notes.'),
-            backgroundColor: context.farreyError,
-          ),
-        );
-      }
-      return;
-    }
-
-    final uploaderUid = authServiceUser?.id ?? fbUser!.uid;
-    final uploaderName = authServiceUser?.fullName ?? fbUser?.displayName ?? 'Anonymous User';
-
     try {
-      final fileUrl = await _storageService.uploadNoteFile(_selectedFile!, _fileExtension ?? 'pdf');
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) throw Exception("User not authenticated");
+      
+      List<String> uploadedUrls = [];
+      List<String> uploadedTypes = [];
+      List<String> uploadedNames = [];
 
-      final noteId = DateTime.now().millisecondsSinceEpoch.toString();
-      final tagsList = _tagsController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+      for (var pFile in _selectedFiles) {
+        final file = File(pFile.path!);
+        final ext = pFile.extension ?? 'unknown';
+        final name = pFile.name;
+        
+        final int index = _selectedFiles.indexOf(pFile);
+        
+        final downloadUrl = await _storageService.uploadNoteFile(
+          file, 
+          ext,
+          onProgress: (progress) {
+            if (mounted) {
+              setState(() {
+                _uploadProgress = (index + progress) / _selectedFiles.length;
+              });
+            }
+          }
+        );
+        uploadedUrls.add(downloadUrl);
+        uploadedTypes.add(ext);
+        uploadedNames.add(name);
+      }
 
       final newNote = FarreyNoteModel(
-        noteId: noteId,
-        uploaderUid: uploaderUid,
-        uploaderName: uploaderName,
+        noteId: DateTime.now().millisecondsSinceEpoch.toString(),
+        uploaderUid: user.uid,
+        uploaderName: user.displayName ?? 'Unknown',
         title: _titleController.text.trim(),
         description: _descController.text.trim(),
         subject: _subjectController.text.trim(),
         semester: _semesterController.text.trim(),
-        tags: tagsList,
         branch: _branchController.text.trim(),
-        fileUrl: fileUrl,
-        fileType: _fileExtension ?? 'pdf',
+        tags: _tagsController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
+        fileUrl: uploadedUrls.isNotEmpty ? uploadedUrls.first : '',
+        fileType: uploadedTypes.isNotEmpty ? uploadedTypes.first : '',
+        fileUrls: uploadedUrls,
+        fileTypes: uploadedTypes,
+        fileNames: uploadedNames,
         uploadTime: DateTime.now(),
       );
 
@@ -133,8 +148,7 @@ class _FarreyUploadScreenState extends State<FarreyUploadScreen> {
     _tagsController.clear();
     _branchController.clear();
     setState(() {
-      _selectedFile = null;
-      _fileExtension = null;
+      _selectedFiles.clear();
     });
   }
 
@@ -151,6 +165,7 @@ class _FarreyUploadScreenState extends State<FarreyUploadScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       backgroundColor: context.farreyBackground,
       body: RefreshIndicator(
@@ -164,15 +179,37 @@ class _FarreyUploadScreenState extends State<FarreyUploadScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    CircularProgressIndicator(color: context.farreyPrimary),
-                    const SizedBox(height: 16),
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        SizedBox(
+                          width: 80,
+                          height: 80,
+                          child: CircularProgressIndicator(
+                            value: _uploadProgress,
+                            color: context.farreyPrimary,
+                            backgroundColor: context.farreySurface,
+                            strokeWidth: 6,
+                          ),
+                        ),
+                        Text(
+                          '${(_uploadProgress * 100).toStringAsFixed(0)}%',
+                          style: TextStyle(
+                            color: context.farreyPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
                     Text('Uploading your note to Notes Ecosystem...', style: TextStyle(color: context.farreyTextSecondary)),
                   ],
                 ),
               )
             : SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                padding: const EdgeInsets.only(top: 110, left: 24, right: 24, bottom: 120),
+                padding: const EdgeInsets.only(top: 16, left: 24, right: 24, bottom: 120),
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -187,7 +224,7 @@ class _FarreyUploadScreenState extends State<FarreyUploadScreen> {
                             color: context.farreySurface,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: _selectedFile == null ? context.farreyPrimary.withValues(alpha: 0.3) : context.farreySuccess,
+                              color: _selectedFiles.isEmpty ? context.farreyPrimary.withValues(alpha: 0.3) : context.farreySuccess,
                               style: BorderStyle.solid,
                               width: 2,
                             ),
@@ -197,22 +234,20 @@ class _FarreyUploadScreenState extends State<FarreyUploadScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(
-                                  _selectedFile == null ? Icons.cloud_upload_outlined : Icons.check_circle_outline,
+                                  Icons.cloud_upload_outlined,
                                   size: 40,
-                                  color: _selectedFile == null ? context.farreyPrimary : context.farreySuccess,
+                                  color: context.farreyPrimary,
                                 ),
                                 const SizedBox(height: 8),
                                 Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                                   child: Text(
-                                    _selectedFile == null ? 'Tap to browse files' : 'File selected: ${_selectedFile!.path.split(RegExp(r'[/\\]')).last}',
+                                    'Tap to browse files',
                                     style: TextStyle(
-                                      color: _selectedFile == null ? context.farreyPrimary : context.farreySuccess,
+                                      color: context.farreyPrimary,
                                       fontWeight: FontWeight.w600,
                                     ),
                                     textAlign: TextAlign.center,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                               ],
@@ -220,6 +255,46 @@ class _FarreyUploadScreenState extends State<FarreyUploadScreen> {
                           ),
                         ),
                       ),
+                      if (_selectedFiles.isNotEmpty) const SizedBox(height: 16),
+                      if (_selectedFiles.isNotEmpty)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: _selectedFiles.asMap().entries.map((entry) {
+                            int idx = entry.key;
+                            PlatformFile file = entry.value;
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: context.farreyPrimary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: context.farreyPrimary.withValues(alpha: 0.3)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.insert_drive_file_rounded, color: context.farreyPrimary, size: 24),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      file.name,
+                                      style: TextStyle(color: context.farreyTextPrimary, fontWeight: FontWeight.bold),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: Icon(Icons.close, color: context.farreyError, size: 20),
+                                    onPressed: () {
+                                      setState(() {
+                                        _selectedFiles.removeAt(idx);
+                                      });
+                                    },
+                                  )
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
                       const SizedBox(height: 24),
                       
                       _buildTextField(context, _titleController, 'Title', 'E.g., Operating Systems Unit 1'),

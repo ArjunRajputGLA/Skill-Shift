@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:marquee/marquee.dart';
 import '../theme/farrey_colors.dart';
 import '../../theme/theme_provider.dart';
 import 'farrey_home_screen.dart';
@@ -49,8 +50,14 @@ class _FarreyMainLayoutState extends State<FarreyMainLayout> {
   }
 
   void _onTabTapped(int index) {
-    setState(() => _currentIndex = index);
-    _pageController.jumpToPage(index);
+    if (_currentIndex != index) {
+      setState(() => _currentIndex = index);
+      _pageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   Widget _buildUnifiedHeader(BuildContext context) {
@@ -76,18 +83,25 @@ class _FarreyMainLayoutState extends State<FarreyMainLayout> {
                   ),
                 ),
                 child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisSize: MainAxisSize.max,
                   children: [
-                    Flexible(
-                      child: Text(
-                        _titles[_currentIndex],
-                        style: TextStyle(
-                          color: context.farreyTextPrimary,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 16,
-                          letterSpacing: -0.5,
+                    Expanded(
+                      child: SizedBox(
+                        height: 24,
+                        child: Marquee(
+                          text: _titles[_currentIndex],
+                          style: TextStyle(
+                            color: context.farreyTextPrimary,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 16,
+                            letterSpacing: -0.5,
+                          ),
+                          scrollAxis: Axis.horizontal,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          blankSpace: 30.0,
+                          velocity: 40.0,
+                          pauseAfterRound: const Duration(seconds: 2),
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -158,16 +172,18 @@ class _FarreyMainLayoutState extends State<FarreyMainLayout> {
       extendBody: true, 
       extendBodyBehindAppBar: true,
       resizeToAvoidBottomInset: false,
-      body: Stack(
+      body: Column(
         children: [
-          PageView(
-            controller: _pageController,
-            physics: const NeverScrollableScrollPhysics(),
-            children: _screens,
-          ),
-          Positioned(
-            top: 0, left: 0, right: 0,
-            child: _buildUnifiedHeader(context),
+          _buildUnifiedHeader(context),
+          Expanded(
+            child: PageView(
+              controller: _pageController,
+              physics: const BouncingScrollPhysics(),
+              onPageChanged: (index) {
+                setState(() => _currentIndex = index);
+              },
+              children: _screens,
+            ),
           ),
         ],
       ),

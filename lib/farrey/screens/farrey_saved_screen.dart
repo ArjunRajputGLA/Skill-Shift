@@ -9,11 +9,20 @@ import '../../services/auth_service.dart';
 import '../../theme/theme_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class FarreySavedScreen extends StatelessWidget {
+class FarreySavedScreen extends StatefulWidget {
   const FarreySavedScreen({super.key});
 
   @override
+  State<FarreySavedScreen> createState() => _FarreySavedScreenState();
+}
+
+class _FarreySavedScreenState extends State<FarreySavedScreen> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     final currentUser = context.watch<AuthService>().currentUser;
     final dbService = FarreyDatabaseService();
 
@@ -74,9 +83,15 @@ class FarreySavedScreen extends StatelessWidget {
             onRefresh: () async {
               await Future.delayed(const Duration(seconds: 1));
             },
-            child: ListView.builder(
-              padding: const EdgeInsets.only(top: 110, bottom: 120, left: 16, right: 16),
+            child: GridView.builder(
+              padding: const EdgeInsets.only(top: 16, bottom: 120, left: 16, right: 16),
               physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.75,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+              ),
               itemCount: savedDocs.length,
               itemBuilder: (context, index) {
                 final docData = savedDocs[index].data() as Map<String, dynamic>;
@@ -85,8 +100,58 @@ class FarreySavedScreen extends StatelessWidget {
                 return FutureBuilder<DocumentSnapshot>(
                   future: FirebaseFirestore.instance.collection('farrey_notes').doc(noteId).get(),
                   builder: (context, noteSnapshot) {
+                    if (noteSnapshot.connectionState == ConnectionState.waiting) {
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: context.farreySurface.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Center(
+                          child: CircularProgressIndicator(color: context.farreyPrimary, strokeWidth: 2),
+                        ),
+                      );
+                    }
                     if (!noteSnapshot.hasData || !noteSnapshot.data!.exists) {
-                      return const SizedBox.shrink(); 
+                      return Stack(
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              color: context.farreySurface,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Text('Note unavailable', style: TextStyle(color: context.farreyTextSecondary, fontSize: 12), textAlign: TextAlign.center),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: GestureDetector(
+                              onTap: () {
+                                dbService.toggleSaveNote(currentUser.id, noteId, false);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: context.farreySurface.withValues(alpha: 0.9),
+                                  shape: BoxShape.circle,
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: Colors.black26,
+                                      blurRadius: 4,
+                                      offset: Offset(0, 2),
+                                    )
+                                  ]
+                                ),
+                                child: Icon(Icons.bookmark_remove_rounded, color: context.farreyError, size: 20),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ); 
                     }
                     
                     final note = FarreyNoteModel.fromMap(
@@ -94,51 +159,36 @@ class FarreySavedScreen extends StatelessWidget {
                       noteSnapshot.data!.id,
                     );
                     
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
-                      child: SizedBox(
-                        height: 220,
-                        child: Row(
-                          children: [
-                            NoteCard(note: note),
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.all(12.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      note.title,
-                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.farreyTextPrimary),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      note.description,
-                                      style: TextStyle(color: context.farreyTextSecondary),
-                                      maxLines: 3,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const Spacer(),
-                                    TextButton.icon(
-                                      onPressed: () {
-                                        dbService.toggleSaveNote(currentUser.id, noteId, false);
-                                      },
-                                      icon: Icon(Icons.bookmark_remove_rounded, color: context.farreyError),
-                                      label: Text('Remove', style: TextStyle(color: context.farreyError)),
-                                      style: TextButton.styleFrom(
-                                        padding: EdgeInsets.zero,
-                                        alignment: Alignment.centerLeft,
-                                      ),
-                                    )
-                                  ],
-                                ),
-                              ),
-                            )
-                          ],
+                    return Stack(
+                      children: [
+                        Positioned.fill(
+                          child: NoteCard(note: note),
                         ),
-                      ),
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: GestureDetector(
+                            onTap: () {
+                              dbService.toggleSaveNote(currentUser.id, noteId, false);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: context.farreySurface.withValues(alpha: 0.9),
+                                shape: BoxShape.circle,
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Colors.black26,
+                                    blurRadius: 4,
+                                    offset: Offset(0, 2),
+                                  )
+                                ]
+                              ),
+                              child: Icon(Icons.bookmark_remove_rounded, color: context.farreyError, size: 20),
+                            ),
+                          ),
+                        ),
+                      ],
                     );
                   },
                 );

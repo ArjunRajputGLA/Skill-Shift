@@ -32,21 +32,23 @@ class AuthService extends ChangeNotifier {
 
   Future<void> _fetchUserProfile(String uid) async {
     try {
-      final doc = await _firestore.collection('users').doc(uid).get().timeout(
-        const Duration(seconds: 5),
-        onTimeout: () => throw Exception('Firestore profile fetch timeout.'),
-      );
+      final doc = await _firestore.collection('users').doc(uid).get();
       if (doc.exists && doc.data() != null) {
         _currentUser = UserModel.fromMap(doc.data()!, doc.id);
       } else {
-        if (_currentUser == null) _createFallbackUser(uid);
+        // Document missing! The user was a victim of the previous timeout bug during sign up.
+        // Recreate a baseline record for them.
+        _createFallbackUser(uid, enforceSetup: true);
+        if (_currentUser != null) {
+          // Save it to firestore asynchronously so we don't block
+          _firestore.collection('users').doc(uid).set(_currentUser!.toMap(), SetOptions(merge: true));
+        }
       }
     } catch (e) {
       debugPrint('Error fetching user profile: $e');
       if (_currentUser == null) {
-        _createFallbackUser(uid);
+        _createFallbackUser(uid, enforceSetup: false); // Network error, use heuristic
       }
-      // If it failed due to timeout, try to recover it silently in the background
       _retryFetchUserProfile(uid);
     }
   }
@@ -56,7 +58,6 @@ class AuthService extends ChangeNotifier {
     while (attempts < 3) {
       await Future.delayed(const Duration(seconds: 5));
       try {
-        // No timeout here, let it wait for the gRPC connection to establish
         final doc = await _firestore.collection('users').doc(uid).get();
         if (doc.exists && doc.data() != null) {
           _currentUser = UserModel.fromMap(doc.data()!, doc.id);
@@ -71,16 +72,16 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  void _createFallbackUser(String uid) {
+  void _createFallbackUser(String uid, {required bool enforceSetup}) {
     final user = _auth.currentUser;
     if (user != null) {
-      // Heuristic: If account is > 2 seconds old, they are a returning user.
-      // If Firestore times out, let returning users straight into the app!
-      final creationTime = user.metadata.creationTime;
-      final lastSignInTime = user.metadata.lastSignInTime;
       bool assumeCompleted = false;
-      if (creationTime != null && lastSignInTime != null) {
-        assumeCompleted = lastSignInTime.difference(creationTime).inSeconds > 2;
+      if (!enforceSetup) {
+        final creationTime = user.metadata.creationTime;
+        final lastSignInTime = user.metadata.lastSignInTime;
+        if (creationTime != null && lastSignInTime != null) {
+          assumeCompleted = lastSignInTime.difference(creationTime).inSeconds > 2;
+        }
       }
 
       _currentUser = UserModel(
@@ -118,15 +119,10 @@ class AuthService extends ChangeNotifier {
           await _firestore
               .collection('users')
               .doc(cred.user!.uid)
-              .set(newUser.toMap())
-              .timeout(
-                const Duration(seconds: 5),
-                onTimeout: () => throw Exception('Firestore timeout.'),
-              );
+              .set(newUser.toMap());
           debugPrint("USER SAVED SUCCESSFULLY");
         } catch (e) {
           debugPrint("FIRESTORE WRITE FAILED: $e");
-          // DO NOT rethrow! The Auth account was created successfully, let them in!
         }
             
         _currentUser = newUser;
@@ -169,7 +165,7 @@ class AuthService extends ChangeNotifier {
 
       if (user != null) {
         try {
-          final doc = await _firestore.collection('users').doc(user.uid).get().timeout(const Duration(seconds: 5));
+          final doc = await _firestore.collection('users').doc(user.uid).get();
           if (!doc.exists) {
             final newUser = UserModel(
               id: user.uid,
@@ -180,10 +176,10 @@ class AuthService extends ChangeNotifier {
               profileCompleted: false,
               createdAt: DateTime.now(),
             );
-            await _firestore.collection('users').doc(user.uid).set(newUser.toMap()).timeout(const Duration(seconds: 5));
+            await _firestore.collection('users').doc(user.uid).set(newUser.toMap());
           }
         } catch (e) {
-          debugPrint('Firestore timeout during Google Sign-in sync: $e');
+          debugPrint('Error during Google Sign-in sync: $e');
         }
         
         return null;

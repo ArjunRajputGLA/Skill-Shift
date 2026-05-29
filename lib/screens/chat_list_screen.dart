@@ -11,11 +11,20 @@ import 'bookings_tab.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/animated_watermark.dart';
 
-class ChatListScreen extends StatelessWidget {
+class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
 
   @override
+  State<ChatListScreen> createState() => _ChatListScreenState();
+}
+
+class _ChatListScreenState extends State<ChatListScreen> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     final user = context.watch<AuthService>().currentUser;
     final theme = Theme.of(context);
     
