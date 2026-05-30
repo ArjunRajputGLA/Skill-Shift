@@ -60,7 +60,7 @@ class FarreyDatabaseService {
         .snapshots()
         .map((snapshot) {
       var notes = snapshot.docs.map((doc) => FarreyNoteModel.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList();
-      notes = notes.where((note) => note.uploaderUid != currentUserId).toList();
+      notes = notes.where((note) => note.uploaderUid != currentUserId && note.moderationStatus == 'approved').toList();
       if (categories != null && categories.isNotEmpty) {
         notes = notes.where((note) => 
           categories.any((c) => note.subject.toLowerCase() == c.toLowerCase()) || 
@@ -78,7 +78,7 @@ class FarreyDatabaseService {
         .snapshots()
         .map((snapshot) {
       var notes = snapshot.docs.map((doc) => FarreyNoteModel.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList();
-      notes = notes.where((note) => note.uploaderUid != currentUserId).toList();
+      notes = notes.where((note) => note.uploaderUid != currentUserId && note.moderationStatus == 'approved').toList();
       if (categories != null && categories.isNotEmpty) {
         notes = notes.where((note) => 
           categories.any((c) => note.subject.toLowerCase() == c.toLowerCase()) || 
@@ -168,10 +168,44 @@ class FarreyDatabaseService {
     
     final q = query.toLowerCase();
     return allNotes.where((note) {
+      if (note.moderationStatus != 'approved') return false;
       return note.title.toLowerCase().contains(q) || 
              note.subject.toLowerCase().contains(q) || 
              note.tags.any((tag) => tag.toLowerCase().contains(q));
     }).toList();
+  }
+
+  /// Report a Note for Community Moderation
+  Future<String?> reportNote(String noteId, String reporterUid) async {
+    try {
+      final docRef = _notesCollection.doc(noteId);
+      final error = await _firestore.runTransaction((transaction) async {
+        final doc = await transaction.get(docRef);
+        if (!doc.exists) return 'Note not found';
+
+        final data = doc.data() as Map<String, dynamic>;
+        List<String> reportedBy = List<String>.from(data['reportedBy'] ?? []);
+        
+        if (reportedBy.contains(reporterUid)) {
+          return 'You have already reported this note.';
+        }
+
+        reportedBy.add(reporterUid);
+        
+        String newStatus = data['moderationStatus'] ?? 'approved';
+        if (reportedBy.length >= 3) {
+          newStatus = 'hidden';
+        }
+
+        transaction.update(docRef, {
+          'reportedBy': reportedBy,
+          'moderationStatus': newStatus,
+        });
+      });
+      return error; // returns null on success
+    } catch (e) {
+      return 'Failed to report note: $e';
+    }
   }
 
   /// One-Time Rating System (Zomato-style)

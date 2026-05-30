@@ -82,11 +82,11 @@ exports.analyzeFarreyNote = functions.https.onCall(async (data, context) => {
     );
   }
 
-  const { noteId, fileUrl, fileType } = data;
-  if (!noteId || !fileUrl || !fileType) {
+  const { noteId, fileUrls, fileTypes } = data;
+  if (!noteId || !fileUrls || !fileTypes || !Array.isArray(fileUrls) || !Array.isArray(fileTypes)) {
     throw new functions.https.HttpsError(
       "invalid-argument",
-      "Missing noteId, fileUrl, or fileType."
+      "Missing noteId, fileUrls, or fileTypes array."
     );
   }
 
@@ -97,14 +97,6 @@ exports.analyzeFarreyNote = functions.https.onCall(async (data, context) => {
     if (doc.exists) {
       return { success: true, message: "Analysis already exists", data: doc.data() };
     }
-
-    // 2. Fetch the file buffer
-    const response = await fetch(fileUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch file: ${response.statusText}`);
-    }
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
 
     // 3. Initialize Gemini API
     const GEMINI_API_KEY = "AIzaSyDGj4uN-m8tDuUq0Hg5C1C-IGdEqwCfBaI"; 
@@ -122,29 +114,46 @@ Return a valid JSON object with the following exact keys:
   "estimatedStudyTime": "1 hr 30 mins" // Estimate based on the length/complexity of the text
 }
 `;
-
-    const normalizedType = fileType.toLowerCase().replace('.', '');
     
     let parts = [promptText];
+    const maxFiles = Math.min(3, fileUrls.length);
 
-    if (normalizedType === 'docx') {
-      const mammoth = require("mammoth");
-      const result = await mammoth.extractRawText({ buffer });
-      parts.push({ text: `Text to analyze:\n${result.value}` });
-    } else {
-      let mimeType = 'text/plain';
-      if (normalizedType === 'pdf') mimeType = 'application/pdf';
-      else if (['jpg', 'jpeg'].includes(normalizedType)) mimeType = 'image/jpeg';
-      else if (normalizedType === 'png') mimeType = 'image/png';
-      else if (normalizedType === 'webp') mimeType = 'image/webp';
-      else if (normalizedType === 'heic') mimeType = 'image/heic';
-      
-      parts.push({
-        inlineData: {
-          data: buffer.toString("base64"),
-          mimeType: mimeType
+    for (let i = 0; i < maxFiles; i++) {
+      try {
+        const url = fileUrls[i];
+        const type = fileTypes.length > i ? fileTypes[i] : 'txt';
+        const normalizedType = type.toLowerCase().replace('.', '');
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+          console.warn(`Failed to fetch file ${i+1}: ${response.statusText}`);
+          continue;
         }
-      });
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        if (normalizedType === 'docx') {
+          const mammoth = require("mammoth");
+          const result = await mammoth.extractRawText({ buffer });
+          parts.push({ text: `Text from document ${i+1}:\n${result.value}` });
+        } else {
+          let mimeType = 'text/plain';
+          if (normalizedType === 'pdf') mimeType = 'application/pdf';
+          else if (['jpg', 'jpeg'].includes(normalizedType)) mimeType = 'image/jpeg';
+          else if (normalizedType === 'png') mimeType = 'image/png';
+          else if (normalizedType === 'webp') mimeType = 'image/webp';
+          else if (normalizedType === 'heic') mimeType = 'image/heic';
+          
+          parts.push({
+            inlineData: {
+              data: buffer.toString("base64"),
+              mimeType: mimeType
+            }
+          });
+        }
+      } catch (err) {
+        console.warn(`Error processing file ${i+1}:`, err);
+      }
     }
 
     // 4. Call Gemini
@@ -192,9 +201,9 @@ exports.generateFarreyStudyMaterial = functions.https.onCall(async (data, contex
     throw new functions.https.HttpsError("unauthenticated", "You must be logged in to generate study material.");
   }
 
-  const { noteId, fileUrl, fileType } = data;
-  if (!noteId || !fileUrl || !fileType) {
-    throw new functions.https.HttpsError("invalid-argument", "Missing noteId, fileUrl, or fileType.");
+  const { noteId, fileUrls, fileTypes } = data;
+  if (!noteId || !fileUrls || !fileTypes || !Array.isArray(fileUrls) || !Array.isArray(fileTypes)) {
+    throw new functions.https.HttpsError("invalid-argument", "Missing noteId, fileUrls, or fileTypes array.");
   }
 
   try {
@@ -203,14 +212,6 @@ exports.generateFarreyStudyMaterial = functions.https.onCall(async (data, contex
     if (!flashcardsSnapshot.empty) {
       return { success: true, message: "Study material already exists" };
     }
-
-    // 2. Fetch the file buffer
-    const response = await fetch(fileUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch file: ${response.statusText}`);
-    }
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
 
     // 3. Initialize Gemini
     const GEMINI_API_KEY = "AIzaSyDGj4uN-m8tDuUq0Hg5C1C-IGdEqwCfBaI"; 
@@ -241,27 +242,45 @@ Return a valid JSON object strictly matching this format:
 Generate at least 5 flashcards and 5 quizzes based on the most important concepts.
 `;
 
-    const normalizedType = fileType.toLowerCase().replace('.', '');
     let parts = [promptText];
+    const maxFiles = Math.min(3, fileUrls.length);
 
-    if (normalizedType === 'docx') {
-      const mammoth = require("mammoth");
-      const result = await mammoth.extractRawText({ buffer });
-      parts.push({ text: `Text to analyze:\n${result.value}` });
-    } else {
-      let mimeType = 'text/plain';
-      if (normalizedType === 'pdf') mimeType = 'application/pdf';
-      else if (['jpg', 'jpeg'].includes(normalizedType)) mimeType = 'image/jpeg';
-      else if (normalizedType === 'png') mimeType = 'image/png';
-      else if (normalizedType === 'webp') mimeType = 'image/webp';
-      else if (normalizedType === 'heic') mimeType = 'image/heic';
-      
-      parts.push({
-        inlineData: {
-          data: buffer.toString("base64"),
-          mimeType: mimeType
+    for (let i = 0; i < maxFiles; i++) {
+      try {
+        const url = fileUrls[i];
+        const type = fileTypes.length > i ? fileTypes[i] : 'txt';
+        const normalizedType = type.toLowerCase().replace('.', '');
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+          console.warn(`Failed to fetch file ${i+1}: ${response.statusText}`);
+          continue;
         }
-      });
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        if (normalizedType === 'docx') {
+          const mammoth = require("mammoth");
+          const result = await mammoth.extractRawText({ buffer });
+          parts.push({ text: `Text from document ${i+1}:\n${result.value}` });
+        } else {
+          let mimeType = 'text/plain';
+          if (normalizedType === 'pdf') mimeType = 'application/pdf';
+          else if (['jpg', 'jpeg'].includes(normalizedType)) mimeType = 'image/jpeg';
+          else if (normalizedType === 'png') mimeType = 'image/png';
+          else if (normalizedType === 'webp') mimeType = 'image/webp';
+          else if (normalizedType === 'heic') mimeType = 'image/heic';
+          
+          parts.push({
+            inlineData: {
+              data: buffer.toString("base64"),
+              mimeType: mimeType
+            }
+          });
+        }
+      } catch (err) {
+        console.warn(`Error processing file ${i+1}:`, err);
+      }
     }
 
     // 4. Call Gemini
@@ -319,4 +338,187 @@ Generate at least 5 flashcards and 5 quizzes based on the most important concept
       "Failed to generate study material. " + error.message
     );
   }
+});
+
+// AI Context-Aware Doubt Solver using Gemini API
+exports.solveFarreyDoubt = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError("unauthenticated", "You must be logged in.");
+  }
+
+  const { noteId, fileUrls, fileTypes, userQuery, chatHistory } = data;
+  if (!noteId || !userQuery) {
+    throw new functions.https.HttpsError("invalid-argument", "Missing noteId or query.");
+  }
+
+  try {
+    const GEMINI_API_KEY = "AIzaSyDGj4uN-m8tDuUq0Hg5C1C-IGdEqwCfBaI"; 
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.5-flash",
+      systemInstruction: "You are an expert tutor for Farrey. Answer the user's question using ONLY the provided document context. If the answer is not in the document, say so. Do not hallucinate. Format your response beautifully using Markdown, you can use bold, italics, lists, and code blocks."
+    });
+
+    let documentParts = [];
+    if (fileUrls && Array.isArray(fileUrls) && fileTypes && Array.isArray(fileTypes)) {
+      const maxFiles = Math.min(3, fileUrls.length);
+      for (let i = 0; i < maxFiles; i++) {
+        try {
+          const url = fileUrls[i];
+          const type = fileTypes.length > i ? fileTypes[i] : 'txt';
+          const normalizedType = type.toLowerCase().replace('.', '');
+          
+          const response = await fetch(url);
+          if (!response.ok) continue;
+          
+          const arrayBuffer = await response.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+
+          if (normalizedType === 'docx') {
+            const mammoth = require("mammoth");
+            const result = await mammoth.extractRawText({ buffer });
+            documentParts.push({ text: `Document ${i+1}:\n${result.value}` });
+          } else {
+            let mimeType = 'text/plain';
+            if (normalizedType === 'pdf') mimeType = 'application/pdf';
+            else if (['jpg', 'jpeg'].includes(normalizedType)) mimeType = 'image/jpeg';
+            else if (normalizedType === 'png') mimeType = 'image/png';
+            else if (normalizedType === 'webp') mimeType = 'image/webp';
+            else if (normalizedType === 'heic') mimeType = 'image/heic';
+            
+            documentParts.push({
+              inlineData: {
+                data: buffer.toString("base64"),
+                mimeType: mimeType
+              }
+            });
+          }
+        } catch (err) {
+          console.warn(`Error processing file ${i+1}:`, err);
+        }
+      }
+    }
+
+    let contents = [];
+    
+    // Add existing chat history and combine consecutive roles to avoid Gemini API errors
+    if (chatHistory && Array.isArray(chatHistory)) {
+      chatHistory.forEach(msg => {
+        if (msg.role && msg.text) {
+          const role = msg.role === 'ai' || msg.role === 'model' ? 'model' : 'user';
+          if (contents.length > 0 && contents[contents.length - 1].role === role) {
+             // Combine with previous message of the same role
+             contents[contents.length - 1].parts.push({ text: "\n" + msg.text });
+          } else {
+             contents.push({
+               role: role,
+               parts: [{ text: msg.text }]
+             });
+          }
+        }
+      });
+    }
+
+    // The chatHistory from Dart already includes the latest user query at the end.
+    // To avoid consecutive "user" roles, we inject the documents into the last message.
+    if (contents.length > 0 && contents[contents.length - 1].role === 'user') {
+      contents[contents.length - 1].parts = [ ...documentParts, ...contents[contents.length - 1].parts ];
+    } else {
+      contents.push({
+        role: 'user',
+        parts: [ ...documentParts, { text: `User Question: ${userQuery}` } ]
+      });
+    }
+
+    const result = await model.generateContent({ contents });
+    const responseText = result.response.text();
+
+    return { success: true, text: responseText };
+
+  } catch (error) {
+    console.error("AI Doubt Solver Error:", error);
+    throw new functions.https.HttpsError(
+      "internal",
+      "Failed to solve doubt. " + error.message
+    );
+  }
+});
+
+// AI Content Moderation for Notes
+exports.moderateFarreyNote = functions.firestore
+  .document("farrey_notes/{noteId}")
+  .onCreate(async (snap, context) => {
+    const note = snap.data();
+    if (!note) return null;
+
+    const title = note.title || '';
+    const description = note.description || '';
+    const fileUrls = note.fileUrls || [];
+    const fileTypes = note.fileTypes || [];
+    
+    // We only need a lightweight check. Reading 1 file is usually enough.
+    let documentParts = [];
+    documentParts.push({ text: `Title: ${title}\nDescription: ${description}` });
+
+    try {
+      if (fileUrls.length > 0) {
+        const url = fileUrls[0];
+        const type = fileTypes.length > 0 ? fileTypes[0] : 'txt';
+        const normalizedType = type.toLowerCase().replace('.', '');
+        
+        const response = await fetch(url);
+        if (response.ok) {
+          const arrayBuffer = await response.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+
+          if (normalizedType === 'docx') {
+            const mammoth = require("mammoth");
+            const result = await mammoth.extractRawText({ buffer });
+            documentParts.push({ text: `Document Start:\n${result.value.substring(0, 5000)}` });
+          } else {
+            let mimeType = 'text/plain';
+            if (normalizedType === 'pdf') mimeType = 'application/pdf';
+            else if (['jpg', 'jpeg'].includes(normalizedType)) mimeType = 'image/jpeg';
+            else if (normalizedType === 'png') mimeType = 'image/png';
+            else if (normalizedType === 'webp') mimeType = 'image/webp';
+            else if (normalizedType === 'heic') mimeType = 'image/heic';
+            
+            documentParts.push({
+              inlineData: {
+                data: buffer.toString("base64"),
+                mimeType: mimeType
+              }
+            });
+          }
+        }
+      }
+
+      const GEMINI_API_KEY = "AIzaSyDGj4uN-m8tDuUq0Hg5C1C-IGdEqwCfBaI"; 
+      const { GoogleGenerativeAI } = require("@google/generative-ai");
+      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+      
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-2.5-flash",
+        systemInstruction: "You are an automated content moderator for an educational platform. You must determine if the provided note/document is appropriate. Reject it ONLY IF it contains explicit NSFW content, extreme toxicity, or is blatantly 100% spam/memes with zero educational value. Respond with EXACTLY ONE WORD: either 'APPROVE' or 'REJECT'."
+      });
+
+      const result = await model.generateContent({
+        contents: [{ role: 'user', parts: documentParts }]
+      });
+      
+      const aiResponse = result.response.text().trim().toUpperCase();
+      console.log(`Moderation result for note ${context.params.noteId}: ${aiResponse}`);
+
+      if (aiResponse.includes('REJECT')) {
+        await snap.ref.update({ moderationStatus: 'rejected' });
+      } else {
+        await snap.ref.update({ moderationStatus: 'approved' });
+      }
+
+    } catch (error) {
+      console.error("Moderation Error:", error);
+      // In case of error, default to approved to not block users, or leave it pending.
+      // We will set to approved for now.
+      await snap.ref.update({ moderationStatus: 'approved' });
+    }
 });

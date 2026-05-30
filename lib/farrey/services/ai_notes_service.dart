@@ -8,7 +8,7 @@ class AiNotesService {
   final FirebaseFunctions _functions = FirebaseFunctions.instance;
 
   /// Retrieves or generates an AI Analysis for a Farrey Note
-  Future<FarreyAiAnalysis?> getAnalysis(String noteId, String fileUrl, String fileType) async {
+  Future<FarreyAiAnalysis?> getAnalysis(String noteId, List<String> fileUrls, List<String> fileTypes) async {
     try {
       // 1. Check if it already exists in Firestore (caching)
       final doc = await _firestore.collection('farrey_ai_analysis').doc(noteId).get();
@@ -20,8 +20,8 @@ class AiNotesService {
       final HttpsCallable callable = _functions.httpsCallable('analyzeFarreyNote');
       final result = await callable.call(<String, dynamic>{
         'noteId': noteId,
-        'fileUrl': fileUrl,
-        'fileType': fileType,
+        'fileUrls': fileUrls,
+        'fileTypes': fileTypes,
       });
 
       if (result.data['success'] == true) {

@@ -9,6 +9,9 @@ import '../widgets/custom_text_field.dart';
 import '../widgets/gradient_background.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
+import '../services/phone_auth_service.dart';
+import 'otp_verification_screen.dart';
+import '../widgets/duolingo_button.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -44,6 +47,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final _experienceController = TextEditingController();
 
   bool _isLoading = false;
+  bool _isWhatsAppVerified = false;
+  String _originalWhatsApp = '';
 
   @override
   void dispose() {
@@ -62,9 +67,78 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     super.dispose();
   }
 
+  void _verifyPhoneNumber() async {
+    String phone = _whatsappController.text.replaceAll(' ', '');
+    if (!phone.startsWith('+')) {
+      NotificationService.showError(context, 'Please include country code (e.g. +91)');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    NotificationService.showLoading(context);
+
+    try {
+      final currentUser = context.read<AuthService>().currentUser;
+      final existingUsers = await FirebaseFirestore.instance
+          .collection('users')
+          .where('whatsapp', isEqualTo: phone)
+          .get();
+
+      for (var doc in existingUsers.docs) {
+        if (doc.id != currentUser?.id) {
+          NotificationService.hideLoading(context);
+          setState(() => _isLoading = false);
+          NotificationService.showError(context, 'This phone number is already registered to another account.');
+          return;
+        }
+      }
+    } catch (e) {
+      debugPrint("Error checking phone uniqueness: $e");
+    }
+
+    final phoneAuth = PhoneAuthService();
+
+    await phoneAuth.sendOtp(
+      phoneNumber: phone,
+      codeSent: (verificationId, resendToken) async {
+        NotificationService.hideLoading(context);
+        setState(() => _isLoading = false);
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OtpVerificationScreen(
+              phoneNumber: phone,
+              verificationId: verificationId,
+              resendToken: resendToken,
+            ),
+          ),
+        );
+        if (result == true) {
+          setState(() {
+            _originalWhatsApp = phone;
+            _isWhatsAppVerified = true;
+          });
+        }
+      },
+      verificationFailed: (error) {
+        NotificationService.hideLoading(context);
+        setState(() => _isLoading = false);
+        NotificationService.showError(context, error.message ?? 'Verification failed');
+      },
+      verificationCompleted: (cred) {},
+      codeAutoRetrievalTimeout: (id) {},
+    );
+  }
+
   // ALL backend logic preserved exactly
   void _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
+    
+    final currentWhatsapp = _whatsappController.text.replaceAll(' ', '');
+    if (currentWhatsapp != _originalWhatsApp || !_isWhatsAppVerified) {
+      NotificationService.showError(context, 'Please verify your WhatsApp number first.');
+      return;
+    }
 
     setState(() => _isLoading = true);
     NotificationService.showLoading(context);
@@ -89,27 +163,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         .where((s) => s.isNotEmpty)
         .toList();
 
-    final whatsapp = _whatsappController.text.trim();
-    if (whatsapp.isNotEmpty) {
-      try {
-        final existingUsers = await FirebaseFirestore.instance
-            .collection('users')
-            .where('whatsapp', isEqualTo: whatsapp)
-            .get();
-
-        for (var doc in existingUsers.docs) {
-          if (doc.id != currentUser.id) {
-            NotificationService.hideLoading(context);
-            setState(() => _isLoading = false);
-            NotificationService.showError(context, 'This phone number is already registered to another account.');
-            return;
-          }
-        }
-      } catch (e) {
-        debugPrint("Error checking phone uniqueness: $e");
-      }
-    }
-
     UserModel updatedUser = UserModel(
       id: currentUser.id,
       fullName: currentUser.fullName,
@@ -126,7 +179,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       skills: skillsList,
       interests: interestsList,
       bio: _bioController.text.trim(),
-      whatsapp: _whatsappController.text.trim(),
+      whatsapp: _originalWhatsApp,
+      whatsappVerified: _isWhatsAppVerified,
       profileCompleted: true,
       createdAt: currentUser.createdAt ?? DateTime.now(),
     );
@@ -376,10 +430,46 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   const SizedBox(height: AppSpacing.lg),
                   CustomTextField(
                     controller: _whatsappController,
-                    label: 'WhatsApp Number (Optional)',
+                    label: 'WhatsApp Number',
                     keyboardType: TextInputType.phone,
                     prefixIcon: const Icon(Icons.phone_outlined),
+                    validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+                    onChanged: (val) {
+                      if (val.replaceAll(' ', '') != _originalWhatsApp) {
+                        setState(() => _isWhatsAppVerified = false);
+                      }
+                    },
                   ),
+                  if (!_isWhatsAppVerified && _whatsappController.text.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: SizedBox(
+                        width: 180,
+                        child: DuolingoButton(
+                          title: 'Verify Number',
+                          icon: Icons.verified_user_outlined,
+                          color: AppColors.primary,
+                          loading: _isLoading,
+                          onPressed: _verifyPhoneNumber,
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (_isWhatsAppVerified && _whatsappController.text.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.check_circle, color: AppColors.verifiedGreen, size: 16),
+                          const SizedBox(width: 4),
+                          Text('Verified', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.verifiedGreen, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                  ],
                   
                   const SizedBox(height: AppSpacing.xxxl),
                   SizedBox(

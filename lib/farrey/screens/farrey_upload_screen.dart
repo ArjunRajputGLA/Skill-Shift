@@ -39,6 +39,13 @@ class _FarreyUploadScreenState extends State<FarreyUploadScreen> with AutomaticK
   bool get wantKeepAlive => true;
 
   Future<void> _pickFile() async {
+    if (_selectedFiles.length >= 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: const Text('You can only upload up to 5 files per note.', style: TextStyle(color: Colors.white)), backgroundColor: context.farreyError),
+      );
+      return;
+    }
+
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx'],
@@ -46,8 +53,33 @@ class _FarreyUploadScreenState extends State<FarreyUploadScreen> with AutomaticK
     );
 
     if (result != null && result.files.isNotEmpty) {
+      final validFiles = <PlatformFile>[];
+      bool oversizedFileSkipped = false;
+
+      for (var file in result.files) {
+        if (file.path == null) continue;
+        if (file.size > 20 * 1024 * 1024) { // 20 MB limit
+          oversizedFileSkipped = true;
+          continue;
+        }
+        validFiles.add(file);
+      }
+
+      if (oversizedFileSkipped) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: const Text('Some files were skipped because they exceed the 20MB limit.', style: TextStyle(color: Colors.white)), backgroundColor: context.farreyWarning),
+        );
+      }
+
       setState(() {
-        _selectedFiles.addAll(result.files.where((f) => f.path != null));
+        final spacesLeft = 5 - _selectedFiles.length;
+        _selectedFiles.addAll(validFiles.take(spacesLeft));
+        
+        if (validFiles.length > spacesLeft) {
+           ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: const Text('Limit of 5 files reached. Some files were not added.', style: TextStyle(color: Colors.white)), backgroundColor: context.farreyWarning),
+          );
+        }
       });
     }
   }

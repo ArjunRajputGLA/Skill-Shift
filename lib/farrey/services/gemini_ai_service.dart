@@ -4,13 +4,13 @@ import 'package:flutter/foundation.dart';
 class GeminiAiService {
   final FirebaseFunctions _functions = FirebaseFunctions.instance;
 
-  Future<void> generateStudyMaterial(String noteId, String fileUrl, String fileType) async {
+  Future<void> generateStudyMaterial(String noteId, List<String> fileUrls, List<String> fileTypes) async {
     try {
       final HttpsCallable callable = _functions.httpsCallable('generateFarreyStudyMaterial');
       final result = await callable.call(<String, dynamic>{
         'noteId': noteId,
-        'fileUrl': fileUrl,
-        'fileType': fileType,
+        'fileUrls': fileUrls,
+        'fileTypes': fileTypes,
       });
 
       if (result.data['success'] != true) {

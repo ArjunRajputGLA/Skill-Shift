@@ -21,6 +21,8 @@ class FarreyNoteModel {
   int totalViews;
   int totalDownloads;
   int totalComments;
+  String moderationStatus;
+  List<String> reportedBy;
 
   FarreyNoteModel({
     required this.noteId,
@@ -43,6 +45,8 @@ class FarreyNoteModel {
     this.totalViews = 0,
     this.totalDownloads = 0,
     this.totalComments = 0,
+    this.moderationStatus = 'approved',
+    this.reportedBy = const [],
   });
 
   Map<String, dynamic> toMap() {
@@ -67,6 +71,8 @@ class FarreyNoteModel {
       'totalViews': totalViews,
       'totalDownloads': totalDownloads,
       'totalComments': totalComments,
+      'moderationStatus': moderationStatus,
+      'reportedBy': reportedBy,
     };
   }
 
@@ -106,6 +112,8 @@ class FarreyNoteModel {
       totalViews: map['totalViews'] ?? 0,
       totalDownloads: map['totalDownloads'] ?? 0,
       totalComments: map['totalComments'] ?? 0,
+      moderationStatus: map['moderationStatus'] ?? 'approved',
+      reportedBy: List<String>.from(map['reportedBy'] ?? []),
     );
   }
 }

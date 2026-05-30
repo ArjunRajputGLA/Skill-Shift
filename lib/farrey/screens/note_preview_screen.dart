@@ -19,6 +19,7 @@ import '../models/farrey_ai_analysis.dart';
 import '../widgets/ai_summary_card.dart';
 import 'flashcard_study_screen.dart';
 import 'quiz_screen.dart';
+import 'doubt_solver_screen.dart';
 class NotePreviewScreen extends StatefulWidget {
   final FarreyNoteModel note;
 
@@ -96,10 +97,11 @@ class _NotePreviewScreenState extends State<NotePreviewScreen> with SingleTicker
     });
 
     try {
-      String targetUrl = widget.note.fileUrls.first;
-      String targetType = widget.note.fileTypes.isNotEmpty ? widget.note.fileTypes.first : 'txt';
-      
-      await GeminiAiService().generateStudyMaterial(widget.note.noteId, targetUrl, targetType);
+      await GeminiAiService().generateStudyMaterial(
+        widget.note.noteId, 
+        widget.note.fileUrls, 
+        widget.note.fileTypes
+      );
       
       if (mounted) {
         setState(() => _hasStudyMaterial = true);
@@ -122,13 +124,13 @@ class _NotePreviewScreenState extends State<NotePreviewScreen> with SingleTicker
   Future<void> _loadAiAnalysis() async {
     if (widget.note.fileUrls.isEmpty) return;
     
-    // Pick the first file, whatever it is
-    String targetUrl = widget.note.fileUrls.first;
-    String targetType = widget.note.fileTypes.isNotEmpty ? widget.note.fileTypes.first : 'txt';
-
     setState(() => _isLoadingAi = true);
     try {
-      final analysis = await AiNotesService().getAnalysis(widget.note.noteId, targetUrl, targetType);
+      final analysis = await AiNotesService().getAnalysis(
+        widget.note.noteId, 
+        widget.note.fileUrls, 
+        widget.note.fileTypes
+      );
       if (mounted) setState(() => _aiAnalysis = analysis);
     } catch (e) {
       if (mounted) {
@@ -364,6 +366,45 @@ class _NotePreviewScreenState extends State<NotePreviewScreen> with SingleTicker
     }
   }
 
+  Future<void> _reportNote() async {
+    if (_currentUserId == null) return;
+    
+    bool confirm = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: context.farreySurface,
+        title: Text('Report Note', style: TextStyle(color: context.farreyError)),
+        content: Text('Are you sure you want to report this note for inappropriate content?', style: TextStyle(color: context.farreyTextPrimary)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel', style: TextStyle(color: context.farreyTextSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: context.farreyError),
+            child: const Text('Report', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    ) ?? false;
+
+    if (!confirm) return;
+
+    final error = await _dbService.reportNote(widget.note.noteId, _currentUserId!);
+    if (mounted) {
+      if (error == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: const Text('Note reported. Thank you for keeping the community safe.'), backgroundColor: context.farreySuccess),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), backgroundColor: context.farreyError),
+        );
+      }
+    }
+  }
+
   void _shareNote() {
     showModalBottomSheet(
       context: context,
@@ -464,6 +505,19 @@ class _NotePreviewScreenState extends State<NotePreviewScreen> with SingleTicker
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.farreyBackground,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DoubtSolverScreen(note: widget.note),
+            ),
+          );
+        },
+        backgroundColor: context.farreyPrimary,
+        icon: const Icon(Icons.psychology, color: Colors.white),
+        label: const Text('Ask AI', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      ),
       appBar: AppBar(
         title: Text(widget.note.title, style: TextStyle(color: context.farreyTextPrimary, fontWeight: FontWeight.bold)),
         backgroundColor: context.farreyBackground,
@@ -481,7 +535,13 @@ class _NotePreviewScreenState extends State<NotePreviewScreen> with SingleTicker
               onPressed: _deleteNote,
               tooltip: 'Delete Note',
             ),
-          ]
+          ] else if (_currentUserId != null && _currentUserId != widget.note.uploaderUid) ...[
+            IconButton(
+              icon: Icon(Icons.report_rounded, color: context.farreyError),
+              onPressed: _reportNote,
+              tooltip: 'Report Note',
+            ),
+          ],
         ],
       ),
       body: Column(
