@@ -151,6 +151,20 @@ class _DoubtSolverScreenState extends State<DoubtSolverScreen> {
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_sweep_outlined),
+            tooltip: 'Clear Chat',
+            onPressed: () {
+              if (_currentChat != null) {
+                setState(() {
+                  _currentChat!.messages.clear();
+                });
+                _solverService.saveChatSession(_currentChat!);
+              }
+            },
+          ),
+        ],
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator(color: context.farreyPrimary))
