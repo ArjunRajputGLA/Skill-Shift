@@ -99,7 +99,7 @@ exports.analyzeFarreyNote = functions.https.onCall(async (data, context) => {
     }
 
     // 3. Initialize Gemini API
-    const GEMINI_API_KEY = "AIzaSyDGj4uN-m8tDuUq0Hg5C1C-IGdEqwCfBaI"; 
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY; 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
@@ -214,7 +214,7 @@ exports.generateFarreyStudyMaterial = functions.https.onCall(async (data, contex
     }
 
     // 3. Initialize Gemini
-    const GEMINI_API_KEY = "AIzaSyDGj4uN-m8tDuUq0Hg5C1C-IGdEqwCfBaI"; 
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY; 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
@@ -352,11 +352,11 @@ exports.solveFarreyDoubt = functions.https.onCall(async (data, context) => {
   }
 
   try {
-    const GEMINI_API_KEY = "AIzaSyDGj4uN-m8tDuUq0Hg5C1C-IGdEqwCfBaI"; 
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY; 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ 
       model: "gemini-2.5-flash",
-      systemInstruction: "You are an expert tutor for Farrey. Answer the user's question using ONLY the provided document context. If the answer is not in the document, say so. Do not hallucinate. Format your response beautifully using Markdown, you can use bold, italics, lists, and code blocks."
+      systemInstruction: "You are an expert educational tutor. You have been provided with document context from the user's notes. Use this context to inform your answers whenever possible. If the answer is not fully covered in the documents, use your vast general knowledge to provide a precise, helpful, and comprehensive answer, just like a top-tier AI assistant. Always be precise and directly answer the user's questions. Format your response beautifully using Markdown, utilizing bold, italics, lists, and code blocks where appropriate."
     });
 
     let documentParts = [];
@@ -493,7 +493,7 @@ exports.moderateFarreyNote = functions.firestore
         }
       }
 
-      const GEMINI_API_KEY = "AIzaSyDGj4uN-m8tDuUq0Hg5C1C-IGdEqwCfBaI"; 
+      const GEMINI_API_KEY = process.env.GEMINI_API_KEY; 
       const { GoogleGenerativeAI } = require("@google/generative-ai");
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
       
