@@ -8,6 +8,12 @@ class NoteCard extends StatelessWidget {
 
   const NoteCard({super.key, required this.note});
 
+  String _formatCount(int count) {
+    if (count >= 1000000) return '${(count / 1000000).toStringAsFixed(1)}M';
+    if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}k';
+    return count.toString();
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -88,10 +94,10 @@ class NoteCard extends StatelessWidget {
                         ),
                       ),
                       const Spacer(),
-                      Icon(Icons.chat_bubble_outline_rounded, color: context.farreyTextSecondary, size: 12),
+                      Icon(Icons.chat_bubble_outline_rounded, color: context.farreyTextSecondary, size: 14),
                       const SizedBox(width: 4),
                       Text(
-                        '${note.totalComments}',
+                        _formatCount(note.totalComments),
                         style: TextStyle(
                           color: context.farreyTextSecondary,
                           fontSize: 11,
@@ -101,7 +107,7 @@ class NoteCard extends StatelessWidget {
                       Icon(Icons.download_rounded, color: context.farreyTextSecondary, size: 14),
                       const SizedBox(width: 4),
                       Text(
-                        '${note.totalDownloads}',
+                        _formatCount(note.totalDownloads),
                         style: TextStyle(
                           color: context.farreyTextSecondary,
                           fontSize: 11,
