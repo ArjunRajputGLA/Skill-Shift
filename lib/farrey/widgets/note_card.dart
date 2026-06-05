@@ -97,7 +97,7 @@ class NoteCard extends StatelessWidget {
                       Icon(Icons.chat_bubble_outline_rounded, color: context.farreyTextSecondary, size: 14),
                       const SizedBox(width: 4),
                       Text(
-                        _formatCount(note.totalComments),
+                        _formatCount(note.totalRatings),
                         style: TextStyle(
                           color: context.farreyTextSecondary,
                           fontSize: 11,
