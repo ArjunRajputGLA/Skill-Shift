@@ -72,79 +72,163 @@ class _NavigatorDashboardScreenState extends State<NavigatorDashboardScreen> {
         children: [
           // Current Goal Card
           Container(
-            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [context.farreyPrimary.withValues(alpha: 0.8), context.farreyPrimary],
+                colors: [
+                  context.farreyPrimary,
+                  context.farreyPrimary.withValues(alpha: 0.8),
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(
-                  color: context.farreyPrimary.withValues(alpha: 0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
+                  color: context.farreyPrimary.withValues(alpha: 0.4),
+                  blurRadius: 24,
+                  offset: const Offset(0, 12),
                 ),
               ],
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '🎯 Goal: ${navigator.goalTitle}',
-                        style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(28),
+              child: Stack(
+                children: [
+                  // Decorative background icon
+                  Positioned(
+                    right: -20,
+                    top: -20,
+                    child: Icon(
+                      Icons.auto_awesome_rounded,
+                      size: 140,
+                      color: Colors.white.withValues(alpha: 0.15),
+                    ),
+                  ),
+                  Positioned(
+                    left: -30,
+                    bottom: -30,
+                    child: Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.1),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Level: ${navigator.currentLevel}',
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
-                      ),
-                      if (navigator.targetDate != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          '⏳ $daysRemaining days remaining',
-                          style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 14, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                  // Content
+                  Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.2),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Text('🎯', style: TextStyle(fontSize: 14)),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      navigator.goalTitle,
+                                      style: const TextStyle(
+                                        color: Colors.white, 
+                                        fontSize: 22, 
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: -0.5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  'Level: ${navigator.currentLevel}',
+                                  style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                              if (navigator.targetDate != null) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  '⏳ $daysRemaining days remaining',
+                                  style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 14, fontWeight: FontWeight.w500),
+                                ),
+                              ],
+                              const SizedBox(height: 20),
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => NavigatorRoadmapScreen(navigatorId: navigator.navigatorId)));
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: context.farreyPrimary,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Flexible(
+                                      child: Text('View Full Roadmap', style: TextStyle(fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+                                    ),
+                                    SizedBox(width: 4),
+                                    Icon(Icons.arrow_forward_rounded, size: 16),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            SizedBox(
+                              height: 90,
+                              width: 90,
+                              child: CircularProgressIndicator(
+                                value: navigator.progress,
+                                strokeWidth: 10,
+                                backgroundColor: Colors.white.withValues(alpha: 0.2),
+                                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                                strokeCap: StrokeCap.round,
+                              ),
+                            ),
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '${(navigator.progress * 100).toInt()}%',
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 22),
+                                ),
+                                Text(
+                                  'Done',
+                                  style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 10, fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ],
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.of(context).push(MaterialPageRoute(builder: (_) => NavigatorRoadmapScreen(navigatorId: navigator.navigatorId)));
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: context.farreyPrimary,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text('View Full Roadmap'),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    SizedBox(
-                      height: 80,
-                      width: 80,
-                      child: CircularProgressIndicator(
-                        value: navigator.progress,
-                        strokeWidth: 8,
-                        backgroundColor: Colors.white.withValues(alpha: 0.2),
-                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    ),
-                    Text(
-                      '${(navigator.progress * 100).toInt()}%',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
-                    ),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 32),

@@ -143,6 +143,15 @@ class NavigatorService {
     }
   }
 
+  // Mark phase as complete
+  Future<void> markPhaseComplete(String roadmapId, String navigatorId) async {
+    await _db.collection('navigator_roadmap').doc(roadmapId).update({'completed': true});
+    
+    // Recalculate progress based on phases instead of tasks? 
+    // Wait, progress is already calculated by tasks in toggleTaskCompletion. 
+    // We can just update the phase.
+  }
+
   // Get Recommended Notes
   Stream<List<FarreyNoteModel>> getRecommendedNotes() {
     // For now we fetch random/top notes. In the future this can filter by current roadmap phase topic.
