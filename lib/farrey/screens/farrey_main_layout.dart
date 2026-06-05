@@ -9,6 +9,8 @@ import 'farrey_explore_screen.dart';
 import 'farrey_upload_screen.dart';
 import 'farrey_saved_screen.dart';
 import 'farrey_profile_screen.dart';
+import '../../services/auth_service.dart';
+import 'navigator_list_screen.dart';
 
 class FarreyMainLayout extends StatefulWidget {
   const FarreyMainLayout({super.key});
@@ -20,6 +22,9 @@ class FarreyMainLayout extends StatefulWidget {
 class _FarreyMainLayoutState extends State<FarreyMainLayout> {
   int _currentIndex = 0;
   late PageController _pageController;
+  
+  Offset _fabPosition = const Offset(0, 0);
+  bool _isFabInitialized = false;
 
   final List<Widget> _screens = [
     const FarreyHomeScreen(),
@@ -41,6 +46,16 @@ class _FarreyMainLayoutState extends State<FarreyMainLayout> {
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: _currentIndex);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isFabInitialized) {
+      final size = MediaQuery.of(context).size;
+      _fabPosition = Offset(size.width - 170, size.height - 250);
+      _isFabInitialized = true;
+    }
   }
 
   @override
@@ -167,35 +182,73 @@ class _FarreyMainLayoutState extends State<FarreyMainLayout> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.farreyBackground,
-      extendBody: true, 
-      extendBodyBehindAppBar: true,
-      resizeToAvoidBottomInset: false,
-      body: Column(
-        children: [
-          _buildUnifiedHeader(context),
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              physics: const BouncingScrollPhysics(),
-              onPageChanged: (index) {
-                setState(() => _currentIndex = index);
-              },
-              children: _screens,
+    final currentUserId = context.read<AuthService>().currentUser?.id ?? '';
+    
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: context.farreyBackground,
+          extendBody: true, 
+          extendBodyBehindAppBar: true,
+          resizeToAvoidBottomInset: false,
+          body: Column(
+            children: [
+              _buildUnifiedHeader(context),
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
+                  physics: const BouncingScrollPhysics(),
+                  onPageChanged: (index) {
+                    setState(() => _currentIndex = index);
+                  },
+                  children: _screens,
+                ),
+              ),
+            ],
+          ),
+          bottomNavigationBar: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+              child: _FloatingGlassNav(
+                currentIndex: _currentIndex,
+                onTap: _onTabTapped,
+              ),
             ),
           ),
-        ],
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-          child: _FloatingGlassNav(
-            currentIndex: _currentIndex,
-            onTap: _onTabTapped,
+        ),
+        Positioned(
+          left: _fabPosition.dx,
+          top: _fabPosition.dy,
+          child: GestureDetector(
+            onPanUpdate: (details) {
+              setState(() {
+                _fabPosition += details.delta;
+                
+                final size = MediaQuery.of(context).size;
+                if (_fabPosition.dx < 0) _fabPosition = Offset(0, _fabPosition.dy);
+                if (_fabPosition.dy < 0) _fabPosition = Offset(_fabPosition.dx, 0);
+                if (_fabPosition.dx > size.width - 160) _fabPosition = Offset(size.width - 160, _fabPosition.dy);
+                if (_fabPosition.dy > size.height - 150) _fabPosition = Offset(_fabPosition.dx, size.height - 150);
+              });
+            },
+            child: Material(
+              color: Colors.transparent,
+              child: FloatingActionButton.extended(
+                heroTag: 'ai_navigator_fab_global',
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => NavigatorListScreen(uid: currentUserId)),
+                  );
+                },
+                backgroundColor: context.farreyPrimary,
+                icon: const Icon(Icons.explore_rounded, color: Colors.white),
+                label: const Text('AI Navigator', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                elevation: 8,
+              ),
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 }

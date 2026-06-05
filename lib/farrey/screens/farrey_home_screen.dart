@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../../theme/theme_provider.dart';
 import '../../services/auth_service.dart';
 import 'farrey_see_all_screen.dart';
+import 'navigator_dashboard_screen.dart';
 
 class FarreyHomeScreen extends StatefulWidget {
   const FarreyHomeScreen({super.key});
