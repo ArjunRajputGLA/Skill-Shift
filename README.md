@@ -12,17 +12,19 @@ Skill Shift is an innovative, community-driven platform designed to connect indi
 - **Dynamic Explore Screen**: Discover new users based on their skills, with real-time search functionality.
 - **Community Posts**: Share updates, accomplishments, and requests in a public feed.
 - **Real-Time Messaging**: Engage in seamless 1-on-1 real-time chats with other users.
-- **Push Notifications**: Stay connected even when the app is closed! Serverless Vercel backend and Firebase Cloud Messaging handle lightning-fast push notifications.
+- **AI Navigator**: A sophisticated AI-powered mentor that generates customized, step-by-step learning roadmaps with daily task breakdowns and streaks.
+- **AI Doubt Solver**: Instantly resolve your technical questions with an integrated AI chatbot.
+- **Push Notifications**: Stay connected even when the app is closed! Handled by Firebase Cloud Messaging and backend functions for lightning-fast push notifications.
 - **Interactive UI**: Gorgeous glassmorphism design, sleek dark/light mode toggles, pull-to-refresh on every screen, and smooth micro-animations.
 - **Unread Indicators**: Smart dot indicators in the chat list and navigation bar to ensure you never miss a message.
 
 ## 🛠️ Technology Stack
 
 - **Frontend**: Flutter & Dart
-- **Backend & Database**: Firebase Firestore (NoSQL Document Database)
+- **Backend & Database**: Firebase Firestore (NoSQL Document Database) & Firebase Cloud Functions
 - **Authentication**: Firebase Auth (Google Sign-In, Phone Auth, Email/Password)
 - **Storage**: Firebase Cloud Storage (Profile pictures, media)
-- **Push Notifications API**: Vercel Serverless Functions (Node.js) & Firebase Admin SDK
+- **AI Integration**: Google Gemini AI API (For AI Navigator and Doubt Solver)
 
 ## 🚀 Getting Started
 
