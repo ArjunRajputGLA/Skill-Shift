@@ -92,7 +92,7 @@ class UserModel {
       'profileCompleted': profileCompleted,
       'profileImageBase64': profileImageBase64,
       'profileImageUrl': profileImageUrl,
-      'fcmToken': fcmToken,
+      // 'fcmToken': fcmToken, // Managed externally by FirebaseNotificationService to prevent null overwrites
       'authProvider': authProvider,
       'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
       'verifiedSkills': verifiedSkills,

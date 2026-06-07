@@ -27,7 +27,11 @@ class FirebaseNotificationService {
   bool _isInitialized = false;
 
   Future<void> initialize() async {
-    if (_isInitialized) return;
+    if (_isInitialized) {
+      // Re-save token for the current session in case user logged out and logged back in
+      await _saveDeviceToken();
+      return;
+    }
 
     // Request permissions
     NotificationSettings settings = await _fcm.requestPermission(
@@ -82,6 +86,18 @@ class FirebaseNotificationService {
       String? token = await _fcm.getToken();
       if (token != null) {
         await _updateTokenInFirestore(token);
+        print("FCM Token saved: $token");
+        
+        // Try to show a subtle visual cue that notifications are ready if a context is available
+        if (rootScaffoldMessengerKey.currentState != null) {
+          rootScaffoldMessengerKey.currentState!.showSnackBar(
+            const SnackBar(
+              content: Text('Push notifications are ready!'),
+              duration: Duration(seconds: 2),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
       }
     } catch (e) {
       print('Error getting FCM token: $e');

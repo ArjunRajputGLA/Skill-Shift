@@ -23,25 +23,25 @@ Current Level: ${currentLevel}
 Available Study Time: ${availableHours}
 Target Date/Timeline: ${targetDateStr || 'No specific date'}
 
-Create a structured learning roadmap and an initial set of daily tasks for this user.
+Create a structured learning roadmap and daily tasks for this user.
 Return the result strictly as a valid JSON object matching the following structure:
 {
   "phases": [
     {
       "title": "Phase 1 Title",
       "description": "What to focus on",
-      "estimatedHours": "10 hours"
-    }
-  ],
-  "initialDailyTasks": [
-    {
-      "title": "Read Chapter 1",
-      "estimatedTime": "1 hour",
-      "type": "read"
+      "estimatedHours": "10 hours",
+      "tasks": [
+        {
+          "title": "Read Chapter 1",
+          "estimatedTime": "1 hour",
+          "type": "read"
+        }
+      ]
     }
   ]
 }
-Generate 3 to 6 phases in the roadmap, and 3 to 5 initial daily tasks for their very first day. The task type can be "read", "practice", "quiz", "flashcard", or "video".
+Generate 3 to 6 phases in the roadmap. For EACH phase, generate 3 to 5 daily tasks. The task type can be "read", "practice", "quiz", "flashcard", or "video".
 Do not include any markdown formatting like \`\`\`json outside the JSON object. Just return the raw JSON text.
 `;
 
@@ -76,42 +76,47 @@ Do not include any markdown formatting like \`\`\`json outside the JSON object. 
       streakDays: 0,
     });
 
-    // Create roadmap phases
+    // Create roadmap phases and nested tasks
     const batch = db.batch();
     
+    // Base date for tasks
+    const baseDate = new Date();
+    baseDate.setHours(0, 0, 0, 0);
+    let daysAdded = 0;
+
     if (parsedData.phases && Array.isArray(parsedData.phases)) {
       parsedData.phases.forEach((phase, index) => {
         const phaseRef = db.collection("navigator_roadmap").doc();
         batch.set(phaseRef, {
           roadmapId: phaseRef.id,
           navigatorId: navigatorId,
-          title: phase.title || `Phase ${index + 1}`,
+          title: phase.title || \`Phase \${index + 1}\`,
           description: phase.description || "",
           order: index,
           completed: false,
           estimatedHours: phase.estimatedHours || "Unknown",
         });
-      });
-    }
 
-    // Create initial tasks
-    if (parsedData.initialDailyTasks && Array.isArray(parsedData.initialDailyTasks)) {
-      // Use current start of day for tasks
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+        if (phase.tasks && Array.isArray(phase.tasks)) {
+          phase.tasks.forEach((task) => {
+            const taskRef = db.collection("navigator_tasks").doc();
+            
+            const taskDate = new Date(baseDate);
+            taskDate.setDate(taskDate.getDate() + daysAdded);
 
-      parsedData.initialDailyTasks.forEach((task) => {
-        const taskRef = db.collection("navigator_tasks").doc();
-        batch.set(taskRef, {
-          taskId: taskRef.id,
-          navigatorId: navigatorId,
-          roadmapId: "general", // Can be updated later
-          title: task.title || "Daily Task",
-          date: today,
-          completed: false,
-          estimatedTime: task.estimatedTime || "30 mins",
-          type: task.type || "practice",
-        });
+            batch.set(taskRef, {
+              taskId: taskRef.id,
+              navigatorId: navigatorId,
+              roadmapId: phaseRef.id,
+              title: task.title || "Daily Task",
+              date: taskDate,
+              completed: false,
+              estimatedTime: task.estimatedTime || "30 mins",
+              type: task.type || "practice",
+            });
+          });
+          daysAdded++; // Increment date for next phase (rough estimation of progression)
+        }
       });
     }
 

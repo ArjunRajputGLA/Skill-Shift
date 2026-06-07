@@ -3,6 +3,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 import 'notification_service.dart';
+import 'firebase_notification_service.dart';
 import 'package:flutter/foundation.dart';
 
 class AuthService extends ChangeNotifier {
@@ -267,6 +268,11 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    try {
+      await FirebaseNotificationService().clearToken();
+    } catch (e) {
+      debugPrint('Error clearing FCM token: $e');
+    }
     await _auth.signOut();
     _currentUser = null;
     notifyListeners();

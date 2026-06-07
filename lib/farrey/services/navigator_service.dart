@@ -82,25 +82,27 @@ class NavigatorService {
     });
   }
 
-  // Stream today's tasks
+  // Stream active phase tasks
   Stream<List<FarreyTaskModel>> getTodayTasks(String navigatorId) {
-    final now = DateTime.now();
-    final startOfDay = DateTime(now.year, now.month, now.day);
-    final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
-
     return _db
         .collection('navigator_tasks')
         .where('navigatorId', isEqualTo: navigatorId)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => FarreyTaskModel.fromMap(doc.data(), doc.id))
-          .where((task) {
-            if (task.date == null) return false;
-            return task.date!.isAfter(startOfDay.subtract(const Duration(seconds: 1))) && 
-                   task.date!.isBefore(endOfDay.add(const Duration(seconds: 1)));
-          })
-          .toList();
+      final tasks = snapshot.docs.map((doc) => FarreyTaskModel.fromMap(doc.data(), doc.id)).toList();
+      if (tasks.isEmpty) return [];
+
+      // Sort by date to maintain phase order since daysAdded increments per phase
+      tasks.sort((a, b) => a.date.compareTo(b.date));
+      
+      final uncompletedTasks = tasks.where((t) => !t.completed).toList();
+      if (uncompletedTasks.isEmpty) return [];
+
+      // The active phase is the roadmapId of the first uncompleted task
+      final activeRoadmapId = uncompletedTasks.first.roadmapId;
+
+      // Return all tasks for the active phase
+      return tasks.where((task) => task.roadmapId == activeRoadmapId).toList();
     });
   }
 
@@ -133,13 +135,31 @@ class NavigatorService {
   Future<void> toggleTaskCompletion(String taskId, bool isCompleted, String navigatorId) async {
     await _db.collection('navigator_tasks').doc(taskId).update({'completed': isCompleted});
 
-    // Recalculate progress
+    // Recalculate progress and streak
     final tasksSnap = await _db.collection('navigator_tasks').where('navigatorId', isEqualTo: navigatorId).get();
     if (tasksSnap.docs.isNotEmpty) {
       int total = tasksSnap.docs.length;
       int completed = tasksSnap.docs.where((d) => d.data()['completed'] == true).length;
       double progress = completed / total;
-      await _db.collection('farrey_navigator').doc(navigatorId).update({'progress': progress});
+
+      // Calculate streak: number of completed phases
+      final tasks = tasksSnap.docs.map((d) => FarreyTaskModel.fromMap(d.data(), d.id)).toList();
+      final groupedByPhase = <String, List<FarreyTaskModel>>{};
+      for (var t in tasks) {
+        groupedByPhase.putIfAbsent(t.roadmapId, () => []).add(t);
+      }
+      
+      int streak = 0;
+      for (var phaseTasks in groupedByPhase.values) {
+        if (phaseTasks.every((t) => t.completed)) {
+          streak++;
+        }
+      }
+
+      await _db.collection('farrey_navigator').doc(navigatorId).update({
+        'progress': progress,
+        'streakDays': streak,
+      });
     }
   }
 
@@ -153,13 +173,28 @@ class NavigatorService {
   }
 
   // Get Recommended Notes
-  Stream<List<FarreyNoteModel>> getRecommendedNotes() {
-    // For now we fetch random/top notes. In the future this can filter by current roadmap phase topic.
+  Stream<List<FarreyNoteModel>> getRecommendedNotes(String goalTitle) {
+    final keywords = goalTitle.toLowerCase().split(' ').where((w) => w.length > 2).take(10).toList();
+    
     return _db
         .collection('farrey_notes')
         .orderBy('averageRating', descending: true)
-        .limit(5)
+        .limit(50)
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => FarreyNoteModel.fromMap(doc.data(), doc.id)).toList());
+        .map((snapshot) {
+      final allNotes = snapshot.docs.map((doc) => FarreyNoteModel.fromMap(doc.data(), doc.id)).toList();
+      
+      if (keywords.isEmpty) return allNotes.take(5).toList();
+
+      final relevantNotes = allNotes.where((note) {
+          final text = '${note.title} ${note.subject} ${note.tags.join(" ")}'.toLowerCase();
+          return keywords.any((k) => text.contains(k));
+      }).toList();
+      
+      if (relevantNotes.isNotEmpty) {
+          return relevantNotes.take(5).toList();
+      }
+      return allNotes.take(5).toList();
+    });
   }
 }

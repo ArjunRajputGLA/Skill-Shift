@@ -346,7 +346,7 @@ class _NavigatorDashboardScreenState extends State<NavigatorDashboardScreen> {
           Text('📚 Recommended Notes', style: TextStyle(color: context.farreyTextPrimary, fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           StreamBuilder<List<FarreyNoteModel>>(
-            stream: _navigatorService.getRecommendedNotes(),
+            stream: _navigatorService.getRecommendedNotes(navigator.goalTitle),
             builder: (context, snapshot) {
               if (!snapshot.hasData || snapshot.data!.isEmpty) {
                 return const Center(child: Text('No recommendations yet'));
