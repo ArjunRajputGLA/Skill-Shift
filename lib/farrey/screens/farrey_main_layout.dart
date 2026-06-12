@@ -53,7 +53,7 @@ class _FarreyMainLayoutState extends State<FarreyMainLayout> {
     super.didChangeDependencies();
     if (!_isFabInitialized) {
       final size = MediaQuery.of(context).size;
-      _fabPosition = Offset(size.width - 170, size.height - 140);
+      _fabPosition = Offset(size.width - 170, size.height - 195);
       _isFabInitialized = true;
     }
   }
@@ -228,7 +228,7 @@ class _FarreyMainLayoutState extends State<FarreyMainLayout> {
                 if (_fabPosition.dx < 0) _fabPosition = Offset(0, _fabPosition.dy);
                 if (_fabPosition.dy < 0) _fabPosition = Offset(_fabPosition.dx, 0);
                 if (_fabPosition.dx > size.width - 160) _fabPosition = Offset(size.width - 160, _fabPosition.dy);
-                if (_fabPosition.dy > size.height - 140) _fabPosition = Offset(_fabPosition.dx, size.height - 140);
+                if (_fabPosition.dy > size.height - 195) _fabPosition = Offset(_fabPosition.dx, size.height - 195);
               });
             },
             child: Material(

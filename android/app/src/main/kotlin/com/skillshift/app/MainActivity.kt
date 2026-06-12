@@ -1,4 +1,4 @@
-package com.example.skill_shift
+package com.skillshift.app
 
 import io.flutter.embedding.android.FlutterActivity
 
